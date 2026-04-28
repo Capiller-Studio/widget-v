@@ -1,16 +1,27 @@
 # frozen_string_literal: true
 
 Rails.application.routes.draw do
-  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
-
-  # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
-  # Can be used by load balancers and uptime monitors to verify that the app is live.
   get "up" => "rails/health#show", as: :rails_health_check
 
-  # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)
-  # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
-  # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
+  # Demo page — simulates a customer website with the widget embedded (dev/test only)
+  get "demo/:account_id/:widget_id", to: "demo#show", as: :demo if Rails.env.local?
 
-  # Defines the root path route ("/")
-  # root "posts#index"
+  # ActionCable WebSocket endpoint
+  mount ActionCable.server => "/cable"
+
+  # Embed script endpoint (served cross-origin via <script> tag)
+  get ":account_id/:widget_id/embed.js", to: "embed#show", as: :embed_script, defaults: { format: :js }
+
+  scope "(:locale)", locale: /[a-z]{2}/ do
+    get "home",           to: "widget#home",           as: :home
+    get "messages",       to: "widget#messages",       as: :messages
+    post "messages",      to: "widget#create_message", as: :create_message
+    get "conversations",  to: "widget#conversations",  as: :conversations
+    get "knowledge-base", to: "widget#help",           as: :help_center
+    get "knowledge-base/categories/:category_id", to: "widget#category", as: :help_category
+    get "search",         to: "widget#search",         as: :search
+
+    # Widget entry point: embed.deskbolic.com/:locale/:account_id/:widget_id
+    get ":account_id/:widget_id", to: "widget#index", as: :widget_entry
+  end
 end

@@ -1,0 +1,29 @@
+.chat-screen 
+  .homepage
+    .header-2
+      .logo
+        = image_tag("logo.png", alt: "deskbolic image")
+      .intro-heading
+        = @widget.welcome_title.presence || t('widget.home.title')
+      .intro-heading-addons
+        - 2.times do 
+          = image_tag("human.png", class: "person-img")
+        .team = t('widget.home.team')
+      .intro-subheading
+        = @widget.welcome_tagline.presence || t('widget.home.subheading')
+    .main 
+      .start-conv
+        .heading = t('widget.home.start_conversation')
+        .sub-heading
+          .svg-icons
+            - 3.times do 
+              = image_tag("human.png", class: "person-img")
+          .reply-time
+            = t('widget.home.reply_time')
+            .time
+              = inline_svg_tag("message.svg")
+              = t('widget.home.reply_time_unit')
+        = button_to messages_path(format: :turbo_stream), method: :get, class: "start-conv-btn", form: { data: { turbo_stream: true } } do
+          p = t('widget.home.start_conversation')
+          = inline_svg_tag("send.svg")
+    = render("footer", active: { home: "active" })

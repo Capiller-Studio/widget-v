@@ -1,0 +1,150 @@
+(function() {
+  "use strict";
+
+  var WIDGET_HOST = "<%= request.base_url %>";
+  var ACCOUNT_ID  = "<%= @account_id %>";
+  var WIDGET_ID   = "<%= @widget_id %>";
+
+  // Read configuration from the script tag's data attributes
+  var scriptTag = document.currentScript;
+  var locale     = scriptTag.getAttribute("data-locale") || "en";
+  var identifier = scriptTag.getAttribute("data-identifier") || "";
+  var signature  = scriptTag.getAttribute("data-signature") || "";
+  var email      = scriptTag.getAttribute("data-email") || "";
+  var name       = scriptTag.getAttribute("data-name") || "";
+  var position   = scriptTag.getAttribute("data-position") || "right";
+  var themeColor = scriptTag.getAttribute("data-color") || "<%= @theme_color || '#778DFF' %>";
+
+  // Build the iframe src (NOT set until first open)
+  function buildSrc() {
+    var src = WIDGET_HOST + "/" + locale + "/" + ACCOUNT_ID + "/" + WIDGET_ID;
+    var params = [];
+    if (identifier) params.push("identifier=" + encodeURIComponent(identifier));
+    if (signature)  params.push("signature=" + encodeURIComponent(signature));
+    if (email)      params.push("email=" + encodeURIComponent(email));
+    if (name)       params.push("name=" + encodeURIComponent(name));
+    if (params.length > 0) src += "?" + params.join("&");
+    return src;
+  }
+
+  // --- Dimensions ---
+  var BUBBLE_SIZE    = "60px";
+  var WIDGET_WIDTH   = "400px";
+  var WIDGET_HEIGHT  = "600px";
+
+  // --- Create bubble ---
+  var bubble = document.createElement("div");
+  bubble.id = "deskbolic-bubble";
+  bubble.setAttribute("aria-label", "Open chat");
+  bubble.setAttribute("role", "button");
+  bubble.setAttribute("tabindex", "0");
+  bubble.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
+  bubble.style.cssText = "position:fixed;bottom:20px;" + position + ":20px;width:" + BUBBLE_SIZE + ";height:" + BUBBLE_SIZE + ";border-radius:50%;background:" + themeColor + ";color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:2147483646;transition:transform 0.2s ease;border:none;font-family:sans-serif;";
+
+  // --- Unread badge ---
+  var badge = document.createElement("span");
+  badge.id = "deskbolic-badge";
+  badge.style.cssText = "position:absolute;top:-4px;right:-4px;width:20px;height:20px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;display:none;align-items:center;justify-content:center;font-weight:bold;";
+  bubble.appendChild(badge);
+
+  // --- Container (hidden, no iframe yet) ---
+  var container = document.createElement("div");
+  container.id = "deskbolic-widget-container";
+  container.style.cssText = "position:fixed;bottom:90px;" + position + ":20px;width:" + WIDGET_WIDTH + ";height:" + WIDGET_HEIGHT + ";max-height:calc(100vh - 120px);border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.15);z-index:2147483647;display:none;opacity:0;transform:translateY(10px);transition:opacity 0.3s ease,transform 0.3s ease;";
+
+  // --- Iframe (created WITHOUT src for zero performance impact) ---
+  var iframe = document.createElement("iframe");
+  iframe.id = "deskbolic-widget-iframe";
+  iframe.style.cssText = "width:100%;height:100%;border:none;border-radius:16px;background:#fff;";
+  iframe.setAttribute("allow", "microphone; camera");
+  iframe.title = "Deskbolic Chat Widget";
+  // No src set — iframe is an empty shell until first open
+
+  container.appendChild(iframe);
+
+  // --- State ---
+  var isOpen = false;
+  var isLoaded = false;
+  var unreadCount = 0;
+
+  function openWidget() {
+    isOpen = true;
+
+    // Lazy-load: set src only on first open
+    if (!isLoaded) {
+      iframe.src = buildSrc();
+      isLoaded = true;
+    }
+
+    container.style.display = "block";
+    container.offsetHeight; // Force reflow for CSS transition
+    container.style.opacity = "1";
+    container.style.transform = "translateY(0)";
+    bubble.style.transform = "scale(0.9)";
+
+    // Clear unread badge
+    unreadCount = 0;
+    badge.style.display = "none";
+    badge.textContent = "";
+  }
+
+  function closeWidget() {
+    isOpen = false;
+    container.style.opacity = "0";
+    container.style.transform = "translateY(10px)";
+    bubble.style.transform = "scale(1)";
+    setTimeout(function() { container.style.display = "none"; }, 300);
+  }
+
+  bubble.addEventListener("click", function() {
+    isOpen ? closeWidget() : openWidget();
+  });
+
+  // Keyboard accessibility
+  bubble.addEventListener("keydown", function(e) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      isOpen ? closeWidget() : openWidget();
+    }
+  });
+
+  // Hover effects
+  bubble.addEventListener("mouseenter", function() {
+    if (!isOpen) bubble.style.transform = "scale(1.1)";
+  });
+  bubble.addEventListener("mouseleave", function() {
+    if (!isOpen) bubble.style.transform = "scale(1)";
+  });
+
+  // Listen for messages from the iframe (unread count, close requests)
+  window.addEventListener("message", function(event) {
+    if (event.origin !== WIDGET_HOST) return;
+
+    var data = event.data;
+    if (!data || !data.type) return;
+
+    if (data.type === "deskbolic:unread") {
+      if (!isOpen) {
+        unreadCount = data.count || 0;
+        if (unreadCount > 0) {
+          badge.textContent = unreadCount > 9 ? "9+" : unreadCount;
+          badge.style.display = "flex";
+        }
+      }
+    } else if (data.type === "deskbolic:close") {
+      closeWidget();
+    }
+  });
+
+  // Inject into DOM (deferred to avoid blocking host rendering)
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", inject);
+  } else {
+    inject();
+  }
+
+  function inject() {
+    document.body.appendChild(container);
+    document.body.appendChild(bubble);
+  }
+})();

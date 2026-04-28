@@ -1,31 +1,25 @@
-# Files in the config/locales directory are used for internationalization and
-# are automatically loaded by Rails. If you want to use locales other than
-# English, add the necessary files in this directory.
-#
-# To use the locales, use `I18n.t`:
-#
-#     I18n.t "hello"
-#
-# In views, this is aliased to just `t`:
-#
-#     <%= t("hello") %>
-#
-# To use a different locale, set it with `I18n.locale`:
-#
-#     I18n.locale = :es
-#
-# This would use the information in config/locales/es.yml.
-#
-# To learn more about the API, please read the Rails Internationalization guide
-# at https://guides.rubyonrails.org/i18n.html.
-#
-# Be aware that YAML interprets the following case-insensitive strings as
-# booleans: `true`, `false`, `on`, `off`, `yes`, `no`. Therefore, these strings
-# must be quoted to be interpreted as strings. For example:
-#
-#     en:
-#       "yes": yup
-#       enabled: "ON"
-
 en:
-  hello: "Hello world"
+  widget:
+    home:
+      title: "Let's start a new chat with our"
+      team: "team!"
+      subheading: "We help your business grow by connecting you to your customers."
+      start_conversation: "Start a conversation"
+      reply_time: "Our usual reply time"
+      reply_time_unit: "A few minutes"
+    conversations:
+      title: "Conversations"
+      messages: "Messages"
+      new_conversation: "Start a conversation"
+      no_conversations: "No conversations yet."
+    footer:
+      home: "Home"
+      conversations: "Conversations"
+      help: "Help Center"
+    chat:
+      placeholder: "Type a message..."
+      typing: "is typing..."
+    help_center:
+      title: "Help Center"
+      search_placeholder: "Search for articles..."
+      no_results: "No articles found."

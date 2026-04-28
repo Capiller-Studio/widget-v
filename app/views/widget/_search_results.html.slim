@@ -1,0 +1,13 @@
+- if @articles.any?
+  .articles-col 
+    - @articles.each do |article|
+      .article
+        .heading = article.title
+        .description = article.content&.truncate(100)
+        .more-details
+          = link_to "#", class: "view-more" do
+            | View More
+            = inline_svg_tag("right_arrow.svg")
+- else
+  .empty-state
+    p = t('widget.help_center.no_results')
