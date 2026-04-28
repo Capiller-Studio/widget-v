@@ -1,0 +1,16 @@
+.chat-screen
+  .homepage
+    .header-1
+      .svg-icons
+        - 3.times do 
+          = image_tag("human.png", class: "person-img")
+      .header-text = t('widget.conversations.title')
+    .main.main-gradient.main-content
+      .conversation-history#conversations-list
+        - if @conversations.any?
+          = render partial: "widget/conversation_item", collection: @conversations, as: :conversation
+          = render "widget/conversations_pager"
+        - else
+          .empty-state
+            p = t('widget.conversations.no_conversations')
+    = render("footer", active: { message: "active" })

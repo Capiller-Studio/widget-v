@@ -1,0 +1,13 @@
+.footer
+  = button_to home_path(format: :turbo_stream), method: :get, class: "footer-btn #{active[:home]}", form: { data: { turbo_stream: true } } do
+    = inline_svg_tag("home_purple.svg", class: "svg-purple")
+    = inline_svg_tag("home.svg", class: "svg-btn")
+    | Home
+  = button_to conversations_path(format: :turbo_stream), method: :get, class: "footer-btn #{active[:message]}", form: { data: { turbo_stream: true } } do
+    = inline_svg_tag("messages_purple.svg", class: "svg-purple")
+    = inline_svg_tag("messages.svg", class: "svg-btn")
+    | Conversations
+  = button_to help_center_path(format: :turbo_stream), method: :get, class: "footer-btn #{active[:help]}", form: { data: { turbo_stream: true } } do
+    = inline_svg_tag("help_purple.svg", class: "svg-purple")
+    = inline_svg_tag("help.svg", class: "svg-btn")
+    | Help Center

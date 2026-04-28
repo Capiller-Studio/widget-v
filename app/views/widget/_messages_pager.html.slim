@@ -1,0 +1,4 @@
+= turbo_frame_tag "messages_pager", src: (@pagy.next ? messages_path(conversation_id: @conversation.id, page: @pagy.next, format: :turbo_stream) : nil), loading: :lazy do
+  - if @pagy.next
+    .empty-state
+      p = t('widget.messages.loading_older', default: 'Loading older messages...')

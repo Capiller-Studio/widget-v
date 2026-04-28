@@ -1,0 +1,17 @@
+.chat-screen
+  .homepage
+    .header-1 style="padding-left: 0px;"
+      .header-text style="margin: auto;" = t('widget.help_center.title')
+    .main.main-gradient
+      .help-section
+        .search-bar
+          input type="text" name="q" placeholder=t('widget.help_center.search_placeholder') data-action="input->widget#search" data-url=search_path
+        #help-results
+          - if @categories.any?
+            .articles-col#categories-list
+              = render partial: "widget/category_item", collection: @categories, as: :category
+              = render "widget/categories_pager"
+          - else
+            .empty-state
+              p = t('widget.help_center.no_results')
+    = render("footer", active: { help: "active" })

@@ -1,0 +1,11 @@
+- if message.incoming?
+  .client-reply
+    = message.content
+- else
+  .agent-msg
+    - if message.sender.is_a?(User) && message.sender.avatar.attached?
+      = image_tag(message.sender.avatar, class: "person-img")
+    - else
+      = image_tag("human.png", class: "person-img")
+    .agent-reply
+      = message.content

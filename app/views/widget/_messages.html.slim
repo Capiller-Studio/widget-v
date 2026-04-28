@@ -1,0 +1,29 @@
+.chat-screen
+  .homepage
+    .header-1
+      .svg-icons
+        - 3.times do 
+          = image_tag("human.png", class: "person-img")
+      .header-text = t('widget.conversations.messages')
+    - if @customer && @inbox
+      .main.main-gradient.main-content(data-controller="widget" data-widget-connection-token-value=@customer_inbox&.connection_token data-widget-url-value=create_message_path)
+        .conversation#messages-list
+          = render "widget/messages_pager"
+          - if @messages.any?
+            = render partial: 'widget/message', collection: @messages
+          - else
+            .time = Time.current.strftime("%a %l:%M %p")
+        .send-msg
+          .search-bar
+            textarea name="content" placeholder=t('widget.chat.placeholder') data-widget-target="input" data-action="keydown.enter->widget#submitMessage"
+            .svg-icons
+              = inline_svg_tag("attachment.svg", class: "svg-img")
+              = inline_svg_tag("smile.svg", class: "svg-img")
+              = inline_svg_tag("gif.svg", class: "svg-img")
+              button.svg-img(data-action="click->widget#submitMessage")
+                = inline_svg_tag("send_msg.svg")
+    - else
+      .main.main-gradient.main-content
+        .empty-state
+          p = t('widget.chat.placeholder')
+    = render("footer", active: { message: "active" })

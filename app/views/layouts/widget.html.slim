@@ -1,0 +1,58 @@
+doctype html
+html
+  head
+    title = content_for(:title) || "Deskbolic Widget"
+    meta name="viewport" content="width=device-width,initial-scale=1"
+    meta name="apple-mobile-web-app-capable" content="yes"
+    meta name="mobile-web-app-capable" content="yes"
+    = csrf_meta_tags
+    = csp_meta_tag
+
+    = yield :head
+
+    link rel="icon" href="/icon.png" type="image/png"
+
+    = stylesheet_link_tag "application", "data-turbo-track": "reload"
+    = javascript_include_tag "application", "data-turbo-track": "reload", type: "module"
+
+    / Dynamic theme from widget ui_configurations
+    - if @widget&.theme_color.present?
+      css:
+        :root {
+          --widget-primary-color: #{@widget.theme_color};
+        }
+        .start-conv-btn, #deskbolic-bubble { background: #{@widget.theme_color} !important; }
+        .footer .active, .reply-time .time { color: #{@widget.theme_color} !important; }
+
+    css:
+      /* Iframe constraint overrides */
+      body { margin: 0; padding: 0; overflow: hidden; background: transparent; }
+      #deskbolic-widget {
+        position: static !important;
+        width: 100% !important;
+        height: 100vh !important;
+      }
+      #deskbolic-widget .chat-screen {
+        width: 100% !important;
+        height: 100% !important;
+      }
+      #deskbolic-widget .homepage,
+      #deskbolic-widget .messages-page,
+      #deskbolic-widget .chat-box {
+        margin: 0 !important;
+        height: 100% !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+
+  body
+    #deskbolic-widget
+      = yield
+
+    / Branding footer (hidden for white-label plans)
+    - unless @widget&.ui_configurations&.dig("hide_branding")
+      .powered-by
+        a href="https://deskbolic.com" target="_blank" rel="noopener"
+          | Powered by Deskbolic

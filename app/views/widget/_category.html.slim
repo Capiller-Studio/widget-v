@@ -1,0 +1,18 @@
+.chat-screen
+  .homepage
+    .header-1 style="padding-left: 0px;"
+      = button_to help_center_path(format: :turbo_stream), method: :get, class: "chat-button", style: "margin-left: 10px;", form: { data: { turbo_stream: true } } do
+        = inline_svg_tag("left_arrow.svg", style: "width: 24px; height: 24px; fill: white;")
+      .header-text style="margin: auto;" = @category.name
+
+    .main.main-gradient
+      .help-section
+        #help-results
+          - if @articles.any?
+            .articles-col#articles-list
+              = render partial: "widget/article_item", collection: @articles, as: :article
+              = render "widget/articles_pager"
+          - else
+            .empty-state
+              p = t('widget.help_center.no_results', default: "No articles found.")
+    = render("footer", active: { help: "active" })

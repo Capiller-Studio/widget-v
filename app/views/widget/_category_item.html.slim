@@ -1,0 +1,7 @@
+.article
+  .heading = category.name
+  .description = category.description&.truncate(80)
+  .more-details
+    = link_to help_category_path(category_id: category.id, format: :turbo_stream), class: "view-more", data: { turbo_stream: true } do
+      | View More
+      = inline_svg_tag("right_arrow.svg")

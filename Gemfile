@@ -115,6 +115,7 @@ gem 'ancestry'
 
 # Search
 gem 'searchkick'
+gem 'elasticsearch'
 
 # JSON Optimization
 gem 'oj'
@@ -179,11 +180,17 @@ gem 'slim-rails'
 # Page Cache
 gem "actionpack-page_caching"
 
+# Pagination
+gem 'pagy'
+
 # Countries and States data
 gem 'carmen'
 
 # Security
 gem 'rack-attack'
+
+# CORS (widget is loaded cross-origin in customer iframes)
+gem 'rack-cors'
 
 # Spam protection
 gem 'invisible_captcha'
