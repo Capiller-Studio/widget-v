@@ -166,7 +166,7 @@
     <span class="arrow">↘</span>
   </div>
 
-  <!-- This is exactly what a real customer would put on their site -->
+  <!-- Identified user (default — uses HMAC verification) -->
   <script
     src="<%= request.base_url %>/<%= @account_id %>/<%= @widget_id %>/embed.js"
     data-identifier="<%= @identifier %>"
@@ -175,5 +175,13 @@
     data-name="<%= @name %>"
     data-locale="en">
   </script>
+
+  <!-- Anonymous user (uncomment to test pre-chat form flow) -->
+  <!--
+  <script
+    src="<%= request.base_url %>/<%= @account_id %>/<%= @widget_id %>/embed.js"
+    data-locale="en">
+  </script> -->
+  
 </body>
 </html>

@@ -1,11 +1,33 @@
 - if message.incoming?
   .client-reply
-    = message.content
+    - if message.content.present?
+      = message.content
+    - if message.attachments.any?
+      .msg-attachments
+        - message.attachments.each do |attachment|
+          - if attachment.image? && attachment.file.attached?
+            .msg-attachment-img
+              = image_tag(attachment.file, class: "attachment-image")
+          - elsif attachment.file.attached?
+            a.msg-attachment-file href=rails_blob_path(attachment.file, disposition: "attachment") target="_blank"
+              span.file-icon 📄
+              span.file-name = attachment.file.filename
 - else
   .agent-msg
     - if message.sender.is_a?(User) && message.sender.avatar.attached?
-      = image_tag(message.sender.avatar, class: "person-img")
+      = image_tag(message.sender.avatar.variant(:thumb), class: "person-img")
     - else
-      = image_tag("human.png", class: "person-img")
+      .person-img.avatar-placeholder = message.sender.try(:display_name)&.first&.upcase || "A"
     .agent-reply
-      = message.content
+      - if message.content.present?
+        = message.content
+      - if message.attachments.any?
+        .msg-attachments
+          - message.attachments.each do |attachment|
+            - if attachment.image? && attachment.file.attached?
+              .msg-attachment-img
+                = image_tag(attachment.file, class: "attachment-image")
+            - elsif attachment.file.attached?
+              a.msg-attachment-file href=rails_blob_path(attachment.file, disposition: "attachment") target="_blank"
+                span.file-icon 📄
+                span.file-name = attachment.file.filename

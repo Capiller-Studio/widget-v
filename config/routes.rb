@@ -20,6 +20,7 @@ Rails.application.routes.draw do
     get "knowledge-base", to: "widget#help",           as: :help_center
     get "knowledge-base/categories/:category_id", to: "widget#category", as: :help_category
     get "search",         to: "widget#search",         as: :search
+    post "contact",       to: "widget#create_customer", as: :create_customer
 
     # Widget entry point: embed.deskbolic.com/:locale/:account_id/:widget_id
     get ":account_id/:widget_id", to: "widget#index", as: :widget_entry

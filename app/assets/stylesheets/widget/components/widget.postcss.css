@@ -48,6 +48,16 @@
           /* @mixin margin-left -1; */
           margin-left: -20px;
           border: 2px solid #F8F8F8;
+          object-fit: cover;
+          &.avatar-placeholder {
+            background: var(--widget-primary-color, #778DFF);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: $font-family-inter-semibold;
+            font-size: 14px;
+          }
         }
       }
       .header-2 {
@@ -95,6 +105,17 @@
 
         &::-webkit-scrollbar {
           display: none;
+        }
+
+        /* When used as chat container, flex layout keeps input at bottom */
+        &.main-content {
+          overflow: hidden;
+          .conversation {
+            flex: 1;
+            overflow-y: auto;
+            scrollbar-width: none;
+            &::-webkit-scrollbar { display: none; }
+          }
         }
 
         .conv-btn {
@@ -233,53 +254,65 @@
           }
         }
 
-        .send-msg {
-          margin: 10px 20px;
-          .search-bar {
-            position: relative;
-            width: 100%;
-            border: 2px solid rgba(0, 0, 0, 0.05);
-            border-radius: 25px;
-            overflow: hidden;
+        /* .send-msg styling now handled by editor.postcss.css */
+
+        /* Pre-chat form styles */
+        .pre-chat-form {
+          padding: 24px 20px;
+          display: flex;
+          flex-direction: column;
+          flex: 1;
+          .pre-chat-subtitle {
+            font-family: $font-family-inter-regular;
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 20px;
+            line-height: 1.5;
+          }
+          .pre-chat-fields {
             display: flex;
-            justify-content: space-between;
-            textarea {
-              font-size: 14px;
-              padding: 14px 120px 14px 20px;
-              border: none;
-              width: 100%;
-              box-sizing: border-box;
-              font-family: $font-family-inter-regular;
-              resize: none;
-              min-height: 48px;
-              background: transparent;
-              &:focus {
-                outline: none;
-              }
-            }
-            .svg-icons {
-              position: absolute;
-              right: 15px;
-              bottom: 50%;
-              transform: translateY(50%);
+            flex-direction: column;
+            gap: 16px;
+            .field-group {
               display: flex;
-              align-items: center;
-              gap: 10px;
-              .svg-img {
-                width: 18px;
-                height: 18px;
-                background: transparent;
-                border: none;
-                padding: 0;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                &:last-child {
-                  width: 22px;
-                  height: 22px;
+              flex-direction: column;
+              gap: 6px;
+              label {
+                font-family: $font-family-inter-medium;
+                font-size: 13px;
+                color: #334155;
+              }
+              input {
+                font-family: $font-family-inter-regular;
+                font-size: 14px;
+                padding: 12px 16px;
+                border: 2px solid rgba(0, 0, 0, 0.08);
+                border-radius: 12px;
+                background: #fff;
+                transition: border-color 0.2s;
+                &:focus {
+                  outline: none;
+                  border-color: var(--widget-primary-color, #778DFF);
                 }
               }
+            }
+            .start-conv-btn {
+              margin-top: 8px;
+              padding: 14px 24px;
+              font-family: $font-family-jakarta-semibold;
+              font-size: 15px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 8px;
+              border: none;
+              border-radius: 12px;
+              background: var(--widget-primary-color, #778DFF);
+              color: #fff;
+              cursor: pointer;
+              transition: opacity 0.2s;
+              &:hover { opacity: 0.9; }
+              svg { width: 18px; height: 18px; }
             }
           }
         }

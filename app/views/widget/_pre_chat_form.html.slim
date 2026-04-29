@@ -1,0 +1,20 @@
+.chat-screen
+  .homepage
+    .header-1
+      .header-text = t('widget.pre_chat.title', default: 'Start a Conversation')
+    .main.main-gradient.main-content
+      .pre-chat-form
+        p.pre-chat-subtitle = t('widget.pre_chat.subtitle', default: "We'd love to hear from you. Please share your details to get started.")
+        = form_tag create_customer_path, method: :post, data: { turbo_stream: true }, class: "pre-chat-fields" do
+          .field-group
+            label for="pre_chat_name"
+              = t('widget.pre_chat.name', default: 'Your Name')
+            input#pre_chat_name type="text" name="name" placeholder=t('widget.pre_chat.name_placeholder', default: 'Jane Doe') required=true
+          .field-group
+            label for="pre_chat_email"
+              = t('widget.pre_chat.email', default: 'Email Address')
+            input#pre_chat_email type="email" name="email" placeholder=t('widget.pre_chat.email_placeholder', default: 'you@example.com') required=true
+          button.start-conv-btn type="submit"
+            = t('widget.pre_chat.submit', default: 'Start Chat')
+            = inline_svg_tag("send.svg")
+    = render("footer", active: { message: "active" })

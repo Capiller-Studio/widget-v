@@ -2,11 +2,16 @@
   .homepage
     .header-1
       .svg-icons
-        - 3.times do 
-          = image_tag("human.png", class: "person-img")
+        - @agents.each do |agent|
+          - if agent.avatar.attached?
+            = image_tag(agent.avatar.variant(:thumb), class: "person-img")
+          - else
+            .person-img.avatar-placeholder = agent.display_name&.first&.upcase || "A"
       .header-text = t('widget.conversations.messages')
     - if @customer && @inbox
-      .main.main-gradient.main-content(data-controller="widget" data-widget-connection-token-value=@customer_inbox&.connection_token data-widget-url-value=create_message_path)
+      / TODO: This is for testing purpose only.
+      - cable_ws_url = "ws://#{request.host}:8080/cable?customer_token=#{@customer_inbox&.connection_token}"
+      .main.main-gradient.main-content(data-controller="widget" data-widget-connection-token-value=@customer_inbox&.connection_token data-widget-url-value=create_message_path data-widget-avatar-url-value=image_path("human.png") data-widget-cable-url-value=cable_ws_url)
         .conversation#messages-list
           = render "widget/messages_pager"
           - if @messages.any?
@@ -14,16 +19,8 @@
           - else
             .time = Time.current.strftime("%a %l:%M %p")
         .send-msg
-          .search-bar
-            textarea name="content" placeholder=t('widget.chat.placeholder') data-widget-target="input" data-action="keydown.enter->widget#submitMessage"
-            .svg-icons
-              = inline_svg_tag("attachment.svg", class: "svg-img")
-              = inline_svg_tag("smile.svg", class: "svg-img")
-              = inline_svg_tag("gif.svg", class: "svg-img")
-              button.svg-img(data-action="click->widget#submitMessage")
-                = inline_svg_tag("send_msg.svg")
+          - editor_i18n = { placeholder: t('widget.editor.placeholder'), emoji: t('widget.editor.emoji'), attach_file: t('widget.editor.attach_file'), send: t('widget.editor.send'), emoji_smileys: t('widget.editor.emoji_smileys'), emoji_gestures: t('widget.editor.emoji_gestures'), emoji_hearts: t('widget.editor.emoji_hearts'), emoji_objects: t('widget.editor.emoji_objects') }
+          .de-container(data-editor-i18n=editor_i18n.to_json)
     - else
-      .main.main-gradient.main-content
-        .empty-state
-          p = t('widget.chat.placeholder')
+      = render "widget/pre_chat_form"
     = render("footer", active: { message: "active" })
