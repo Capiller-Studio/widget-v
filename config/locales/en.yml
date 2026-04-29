@@ -19,7 +19,25 @@ en:
     chat:
       placeholder: "Type a message..."
       typing: "is typing..."
+    editor:
+      placeholder: "Type a message…"
+      emoji: "Emoji"
+      attach_file: "Attach file"
+      send: "Send message"
+      emoji_smileys: "😀 Smileys"
+      emoji_gestures: "👋 Gestures"
+      emoji_hearts: "❤️ Hearts"
+      emoji_objects: "🎉 Objects"
+    pre_chat:
+      title: "Start a Conversation"
+      subtitle: "We'd love to hear from you. Please share your details to get started."
+      name: "Your Name"
+      name_placeholder: "Jane Doe"
+      email: "Email Address"
+      email_placeholder: "you@example.com"
+      submit: "Start Chat"
     help_center:
       title: "Help Center"
       search_placeholder: "Search for articles..."
       no_results: "No articles found."
+

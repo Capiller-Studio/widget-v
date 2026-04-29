@@ -1,3 +1,4 @@
 web: env RUBY_DEBUG_OPEN=true bin/rails server
+anycable: bundle exec anycable
 js: yarn build --watch
 css: yarn build:css --watch

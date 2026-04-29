@@ -19,7 +19,7 @@ class WidgetController < ApplicationController
 
   def messages
     find_or_set_conversation
-    messages_query = @conversation&.messages&.order(created_at: :desc) || Message.none
+    messages_query = @conversation&.messages&.includes(:attachments, sender: { avatar_attachment: :blob })&.order(created_at: :desc) || Message.none
     @pagy, @messages = pagy(messages_query, items: 20)
     
     # We ordered by desc for pagy, so reverse to show in chronological order in UI
@@ -95,7 +95,8 @@ class WidgetController < ApplicationController
     @conversation = Channels::WebWidgets::ConversationCreator.call(
       web_widget_channel: @widget,
       contact_params: customer_contact_params,
-      content: params[:content]
+      content: params[:content],
+      attachments: params[:attachments]&.values || []
     )
 
     head :ok
@@ -117,6 +118,39 @@ class WidgetController < ApplicationController
     end
   end
 
+  def create_customer
+    external_id = "anon-#{SecureRandom.hex(8)}"
+
+    @customer = Customers::CustomerCreator.call(
+      account: @account,
+      inbox: @inbox,
+      external_id: external_id,
+      email: params[:email],
+      params: {
+        name: params[:name],
+        first_name: params[:name]&.split(" ")&.first,
+        last_name: params[:name]&.split(" ")&.drop(1)&.join(" ")
+      }
+    )
+
+    @customer_inbox = @customer&.customer_inboxes&.find_by(inbox: @inbox)
+    session[:customer_id] = @customer.id
+    session[:customer_external_id] = @customer_inbox&.external_id
+
+    # After creating the customer, redirect to messages view
+    find_or_set_conversation
+    messages_query = @conversation&.messages&.includes(:attachments, sender: { avatar_attachment: :blob })&.order(created_at: :desc) || Message.none
+    @pagy, @messages = pagy(messages_query, items: 20)
+    @messages = @messages.reverse
+
+    respond_to do |format|
+      format.turbo_stream do
+        render(turbo_stream: turbo_stream.update("widget", partial: "widget/messages"))
+      end
+      format.html { redirect_to messages_path }
+    end
+  end
+
   private
 
   def set_widget
@@ -125,6 +159,8 @@ class WidgetController < ApplicationController
     @inbox = @widget.inboxes.first
 
     return render(plain: "Widget not configured", status: :service_unavailable) unless @inbox
+
+    @agents = @inbox.users.includes(avatar_attachment: :blob).limit(3)
 
     session[:account_id] = @account.id
     session[:widget_id] = @widget.id
@@ -167,6 +203,7 @@ class WidgetController < ApplicationController
 
     @customer_inbox = @customer&.customer_inboxes&.find_by(inbox: @inbox)
     session[:customer_id] = @customer.id
+    session[:customer_external_id] = @customer_inbox&.external_id
   end
 
   def find_or_set_conversation
@@ -181,7 +218,7 @@ class WidgetController < ApplicationController
 
   def customer_contact_params
     {
-      external_id: params[:identifier] || session[:customer_external_id] || @customer&.external_id,
+      external_id: @customer_inbox&.external_id || session[:customer_external_id] || params[:identifier] || @customer&.external_id,
       email: @customer&.email || params[:email],
       name: @customer&.name || params[:name],
       first_name: @customer&.first_name || params[:first_name],

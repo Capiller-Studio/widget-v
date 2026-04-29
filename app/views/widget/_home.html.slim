@@ -6,8 +6,11 @@
       .intro-heading
         = @widget.welcome_title.presence || t('widget.home.title')
       .intro-heading-addons
-        - 2.times do 
-          = image_tag("human.png", class: "person-img")
+        - @agents.each do |agent|
+          - if agent.avatar.attached?
+            = image_tag(agent.avatar.variant(:thumb), class: "person-img")
+          - else
+            .person-img.avatar-placeholder = agent.display_name&.first&.upcase || "A"
         .team = t('widget.home.team')
       .intro-subheading
         = @widget.welcome_tagline.presence || t('widget.home.subheading')
@@ -16,8 +19,11 @@
         .heading = t('widget.home.start_conversation')
         .sub-heading
           .svg-icons
-            - 3.times do 
-              = image_tag("human.png", class: "person-img")
+            - @agents.each do |agent|
+              - if agent.avatar.attached?
+                = image_tag(agent.avatar.variant(:thumb), class: "person-img")
+              - else
+                .person-img.avatar-placeholder = agent.display_name&.first&.upcase || "A"
           .reply-time
             = t('widget.home.reply_time')
             .time
