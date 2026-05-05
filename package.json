@@ -10,20 +10,20 @@
   },
   "dependencies": {
     "@hotwired/stimulus": "^3.2.2",
-    "@hotwired/turbo-rails": "^8.0.12",
+    "@hotwired/turbo-rails": "^8.0.23",
     "@lexical/history": "^0.44.0",
     "@lexical/html": "^0.44.0",
     "@lexical/rich-text": "^0.44.0",
     "@lexical/selection": "^0.44.0",
     "@lexical/utils": "^0.44.0",
-    "autoprefixer": "^10.4.20",
-    "esbuild": "^0.24.2",
+    "autoprefixer": "^10.5.0",
+    "esbuild": "^0.28.0",
     "lexical": "^0.44.0",
-    "postcss": "^8.5.1",
-    "postcss-cli": "^11.0.0",
-    "postcss-import": "^16.1.0",
-    "postcss-mixins": "^11.0.3",
-    "postcss-nesting": "^13.0.1",
+    "postcss": "^8.5.14",
+    "postcss-cli": "^11.0.1",
+    "postcss-import": "^16.1.1",
+    "postcss-mixins": "^12.1.2",
+    "postcss-nesting": "^14.0.0",
     "postcss-simple-vars": "^7.0.1"
   }
 }
