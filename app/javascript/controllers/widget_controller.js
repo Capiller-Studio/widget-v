@@ -39,7 +39,11 @@ export default class extends Controller {
     this.unreadCount = 0
     this._reconnectAttempts = 0
 
-    const cableUrl = this.cableUrlValue || `/cable?customer_token=${this.connectionTokenValue}`
+    const metaUrl = document.querySelector("meta[name='action-cable-url']")?.content
+    const cableUrl = metaUrl 
+      ? `${metaUrl}?customer_token=${this.connectionTokenValue}`
+      : `/cable?customer_token=${this.connectionTokenValue}`
+
     console.log('[Deskbolic] Connecting to ActionCable:', cableUrl.substring(0, 50) + '...')
     this.consumer = createConsumer(cableUrl)
     this.channel = this.consumer.subscriptions.create(
