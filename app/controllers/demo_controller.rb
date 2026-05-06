@@ -23,4 +23,20 @@ class DemoController < ActionController::Base
     @email      = "customer@example.com"
     @name       = "Jane Doe"
   end
+
+  def show_form
+    @account_id = params[:account_id]
+    @form_id    = params[:form_id]
+
+    form = Channel::ContactForm.find_by(account_id: @account_id, id: @form_id)
+
+    if form.nil?
+      return render plain: "Contact Form not found. Run seeds or create one first.", status: :not_found
+    end
+
+    @identifier = "test-customer-001"
+    @signature  = OpenSSL::HMAC.hexdigest("sha256", form.secret, @identifier)
+    @email      = "customer@example.com"
+    @name       = "Jane Doe"
+  end
 end

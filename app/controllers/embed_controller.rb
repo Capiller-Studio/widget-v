@@ -21,4 +21,18 @@ class EmbedController < ApplicationController
 
     render layout: false
   end
+
+  def show_form
+    @account_id = params[:account_id]
+    @form_id    = params[:form_id]
+
+    form = Channel::ContactForm.find_by(account_id: @account_id, id: @form_id)
+    @theme_color = form&.configurations&.dig("primary_color") || "#778DFF"
+
+    response.headers["Content-Type"] = "application/javascript"
+    response.headers["Cache-Control"] = "public, max-age=3600, s-maxage=86400"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+
+    render layout: false
+  end
 end

@@ -1,0 +1,50 @@
+.chat-screen
+  .chat-header
+    h3 = @form.name
+    - if @form.configurations["welcome_message"].present?
+      p.welcome-text = @form.configurations["welcome_message"]
+
+  .chat-box
+    .messages-container style="padding: 20px; overflow-y: auto;"
+      = form_with url: contact_form_submit_path(account_id: @account.id, form_id: @form.id, locale: I18n.locale), method: :post, local: true, multipart: true, class: "contact-form" do |f|
+        / Honeypot field
+        div style="display:none;"
+          = text_field_tag :nickname
+        
+        - if @form.require_login?
+          = hidden_field_tag :identifier, params[:identifier]
+          = hidden_field_tag :signature, params[:signature]
+          
+          / If require_login, email/name might be passed securely via HMAC
+          - if @customer_data[:email].present?
+            = hidden_field_tag :email, @customer_data[:email]
+          - if @customer_data[:name].present?
+            = hidden_field_tag :name, @customer_data[:name]
+
+        - @custom_fields.each do |field|
+          .form-group style="margin-bottom: 15px;"
+            - translation = field.translations.detect { |t| t.locale.to_s == I18n.locale.to_s } || field.translations.detect { |t| t.locale.to_s == "en" }
+            - label_text = translation&.label || field.key.titleize
+            - placeholder_text = translation&.placeholder
+
+            label for=field.key style="display:block; margin-bottom: 5px; font-weight: 500; font-size: 14px; color: #334155;"
+              = label_text
+              - if field.required?
+                span style="color: #ef4444; margin-left: 3px;" *
+
+            - case field.field_type.to_sym
+            - when :text, :email, :phone, :number, :url
+              - is_customer = field.entity_type_customer?
+              - value = @customer_data[field.key.to_sym] if is_customer
+              - is_readonly = field.is_readonly || (@form.require_login? && @customer_data[field.key.to_sym].present?)
+              = text_field_tag field.key, value, placeholder: placeholder_text, required: field.required?, class: "form-control", readonly: is_readonly, style: "width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px;"
+              
+            - when :textarea
+              = text_area_tag field.key, nil, placeholder: placeholder_text, required: field.required?, class: "form-control", rows: 4, style: "width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; resize: vertical;"
+              
+            - when :select
+              - options = field.localized_options(I18n.locale).map { |o| [o["label"], o["value"]] }
+              = select_tag field.key, options_for_select(options), include_blank: "Select...", required: field.required?, class: "form-control", style: "width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px;"
+
+        .form-actions style="margin-top: 25px;"
+          = f.submit "Submit Request", class: "btn-submit", style: "width: 100%; padding: 12px; background: #{@form.configurations['primary_color'] || '#10B981'}; color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;"

@@ -40,4 +40,8 @@ en:
       title: "Help Center"
       search_placeholder: "Search for articles..."
       no_results: "No articles found."
+  contact_form:
+    success_title: "Message Sent!"
+    send_message: "Send Message"
+    success: "Thank you! Your message has been received."
 
