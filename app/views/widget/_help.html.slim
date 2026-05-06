@@ -3,7 +3,7 @@
     .header-1 style="padding-left: 0px;"
       .header-text style="margin: auto;" = t('widget.help_center.title')
     .main.main-gradient
-      .help-section
+      .help-section data-controller="widget"
         .search-bar
           input type="text" name="q" placeholder=t('widget.help_center.search_placeholder') data-action="input->widget#search" data-url=search_path
         #help-results

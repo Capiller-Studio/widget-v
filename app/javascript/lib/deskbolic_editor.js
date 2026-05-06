@@ -55,7 +55,10 @@ export class DeskbolicEditor {
     this.fileBtn = this._createToolbarBtn('📎', this.i18n.attach_file, 'de-file-btn')
     this.fileInput = document.createElement('input')
     this.fileInput.type = 'file'
-    this.fileInput.accept = 'image/*,.pdf,.doc,.docx,.txt,.zip'
+    this.fileInput.accept = 'image/*,video/*,.pdf,.doc,.docx,.txt,.zip'
+    this.maxFiles = 5
+    this.maxFileSize = 5 * 1024 * 1024
+    this.maxVideoSize = 20 * 1024 * 1024
     this.fileInput.multiple = true
     this.fileInput.style.display = 'none'
 
@@ -76,15 +79,27 @@ export class DeskbolicEditor {
     this.filePreview = document.createElement('div')
     this.filePreview.classList.add('de-file-preview')
 
+    // Error box
+    this.errorBox = document.createElement('div')
+    this.errorBox.classList.add('de-error-box')
+    this.errorBox.style.display = 'none'
+
     // Assemble
     this.toolbar.appendChild(this.emojiBtn)
     this.toolbar.appendChild(this.fileBtn)
     this.toolbar.appendChild(this.fileInput)
 
-    this.container.appendChild(this.filePreview)
-    this.container.appendChild(this.editorEl)
-    this.container.appendChild(this.toolbar)
-    this.container.appendChild(this.sendBtn)
+    // input row
+    this.inputRow = document.createElement('div')
+    this.inputRow.classList.add('de-input-row')
+
+    this.inputRow.appendChild(this.editorEl)
+    this.inputRow.appendChild(this.toolbar)
+    this.inputRow.appendChild(this.sendBtn)
+
+    this.container.appendChild(this.errorBox)  
+    this.container.appendChild(this.filePreview) 
+    this.container.appendChild(this.inputRow)
     this.container.appendChild(this.emojiPicker)
   }
 
@@ -152,6 +167,17 @@ export class DeskbolicEditor {
     })
   }
 
+  _showError(message) {
+    this.errorBox.textContent = message
+    this.errorBox.style.display = 'block'
+
+    clearTimeout(this._errorTimer)
+    this._errorTimer = setTimeout(() => {
+      this.errorBox.style.display = 'none'
+      this.errorBox.textContent = ''
+    }, 4000)
+  }
+
   _handleSubmit() {
     const text = this.getTextContent()
     if (!text && this._selectedFiles.length === 0) return
@@ -168,14 +194,43 @@ export class DeskbolicEditor {
     const files = Array.from(this.fileInput.files)
     if (!files.length) return
 
-    this._selectedFiles = (this._selectedFiles || []).concat(files)
+    const totalFiles = (this._selectedFiles?.length || 0) + files.length
+    if (totalFiles > this.maxFiles) {
+      this._showError(`You can only upload ${this.maxFiles} files`)
+      return
+    }
+
+    const validFiles = []
+    for (const file of files) {
+      const error = this._validateFile(file)
+      if (error) {
+        this._showError(error)
+        continue
+      }
+      validFiles.push(file)
+    }
+
+    this._selectedFiles = (this._selectedFiles || []).concat(validFiles)
     this._renderFilePreview()
 
     if (this.onFileSelect) {
-      this.onFileSelect(files)
+      this.onFileSelect(validFiles)
     }
 
     this.fileInput.value = ''
+  }
+
+  _validateFile(file) {
+    const isVideo = file.type.startsWith('video/')
+
+    if (isVideo && file.size > this.maxVideoSize) {
+      return `Video exceeds 20MB limit`
+    }
+    if (!isVideo && file.size > this.maxFileSize) {
+      return `File exceeds 5MB limit`
+    }
+
+    return null
   }
 
   _renderFilePreview() {
