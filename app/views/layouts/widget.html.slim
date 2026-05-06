@@ -16,14 +16,15 @@ html
     = stylesheet_link_tag "application", "data-turbo-track": "reload"
     = javascript_include_tag "application", "data-turbo-track": "reload", type: "module"
 
-    / Dynamic theme from widget ui_configurations
-    - if @widget&.theme_color.present?
+    / Dynamic theme from widget or form configurations
+    - theme_color = @widget&.theme_color || @form&.configurations&.dig("primary_color")
+    - if theme_color.present?
       css:
         :root {
-          --widget-primary-color: #{@widget.theme_color};
+          --widget-primary-color: #{theme_color};
         }
-        .start-conv-btn, #deskbolic-bubble { background: #{@widget.theme_color} !important; }
-        .footer .active, .reply-time .time { color: #{@widget.theme_color} !important; }
+        .start-conv-btn, #deskbolic-bubble, .btn-primary { background: #{theme_color} !important; }
+        .footer .active, .reply-time .time { color: #{theme_color} !important; }
 
     css:
       /* Iframe constraint overrides */

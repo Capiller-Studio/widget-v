@@ -4,13 +4,15 @@ Rails.application.routes.draw do
   get "up" => "rails/health#show", as: :rails_health_check
 
   # Demo page — simulates a customer website with the widget embedded (dev/test only)
-  get "demo/:account_id/:widget_id", to: "demo#show", as: :demo if Rails.env.local?
+  get "demo/widget/:account_id/:widget_id", to: "demo#show", as: :demo if Rails.env.local?
+  get "demo/form/:account_id/:form_id", to: "demo#show_form", as: :demo_form if Rails.env.local?
 
   # ActionCable WebSocket endpoint
   mount ActionCable.server => "/cable"
 
   # Embed script endpoint (served cross-origin via <script> tag)
-  get ":account_id/:widget_id/embed.js", to: "embed#show", as: :embed_script, defaults: { format: :js }
+  get "widget/:account_id/:widget_id/embed.js", to: "embed#show", as: :embed_script, defaults: { format: :js }
+  get "form/:account_id/:form_id/embed.js", to: "embed#show_form", as: :embed_form_script, defaults: { format: :js }
 
   scope "(:locale)", locale: /[a-z]{2}/ do
     get "home",           to: "widget#home",           as: :home
@@ -22,7 +24,11 @@ Rails.application.routes.draw do
     get "search",         to: "widget#search",         as: :search
     post "contact",       to: "widget#create_customer", as: :create_customer
 
-    # Widget entry point: embed.deskbolic.com/:locale/:account_id/:widget_id
-    get ":account_id/:widget_id", to: "widget#index", as: :widget_entry
+    # Widget entry point: embed.deskbolic.com/:locale/widget/:account_id/:widget_id
+    get "widget/:account_id/:widget_id", to: "widget#index", as: :widget_entry
+    
+    # Form entry point: embed.deskbolic.com/:locale/form/:account_id/:form_id
+    get "form/:account_id/:form_id", to: "contact_forms#show", as: :contact_form_entry
+    post "form/:account_id/:form_id", to: "contact_forms#create", as: :contact_form_submit
   end
 end

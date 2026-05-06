@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deskbolic Widget — Demo Page</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+      min-height: 100vh;
+    }
+
+    /* --- Nav --- */
+    nav {
+      background: #fff;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    nav .logo {
+      font-size: 20px;
+      font-weight: 700;
+      color: #778DFF;
+    }
+    nav .sep { color: #cbd5e1; }
+    nav .label { font-size: 14px; color: #64748b; }
+
+    /* --- Hero --- */
+    .hero {
+      max-width: 720px;
+      margin: 80px auto 40px;
+      text-align: center;
+      padding: 0 24px;
+    }
+    .hero h1 {
+      font-size: 36px;
+      font-weight: 800;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #778DFF, #6366f1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      font-size: 16px;
+      color: #64748b;
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    /* --- Info cards --- */
+    .cards {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .card .title {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin-bottom: 6px;
+    }
+    .card .value {
+      font-size: 13px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      color: #334155;
+      word-break: break-all;
+    }
+
+    /* --- Embed code block --- */
+    .embed-section {
+      max-width: 720px;
+      margin: 40px auto;
+      padding: 0 24px;
+    }
+    .embed-section h2 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #475569;
+    }
+    pre {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 20px;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.5;
+      overflow-x: auto;
+    }
+    pre .attr { color: #7dd3fc; }
+    pre .val  { color: #86efac; }
+    pre .tag  { color: #c4b5fd; }
+
+    .hint {
+      margin-top: 48px;
+      text-align: center;
+      font-size: 14px;
+      color: #94a3b8;
+    }
+    .hint .arrow { font-size: 24px; display: block; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <nav>
+    <span class="logo">Deskbolic</span>
+    <span class="sep">·</span>
+    <span class="label">Contact Form Demo Page</span>
+  </nav>
+
+  <div class="hero">
+    <h1>Contact Form Integration Demo</h1>
+    <p>
+      This page simulates a customer's website with the Deskbolic Contact Form embedded.
+    </p>
+    <p>
+      The form is embedded directly into the page body.
+    </p>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="title">Account ID</div>
+      <div class="value"><%= @account_id %></div>
+    </div>
+    <div class="card">
+      <div class="title">Form ID</div>
+      <div class="value"><%= @form_id %></div>
+    </div>
+    <div class="card">
+      <div class="title">Test Customer</div>
+      <div class="value"><%= @email %></div>
+    </div>
+  </div>
+
+  <div class="embed-section">
+    <h2>Embed Code Used on This Page</h2>
+    <pre><code><span class="tag">&lt;script</span>
+  <span class="attr">src</span>=<span class="val">"<%= request.base_url %>/form/<%= @account_id %>/<%= @form_id %>/embed.js"</span>
+  <span class="attr">data-identifier</span>=<span class="val">"<%= @identifier %>"</span>
+  <span class="attr">data-signature</span>=<span class="val">"<%= @signature %>"</span>
+  <span class="attr">data-email</span>=<span class="val">"<%= @email %>"</span>
+  <span class="attr">data-name</span>=<span class="val">"<%= @name %>"</span>
+  <span class="attr">data-locale</span>=<span class="val">"en"</span><span class="tag">&gt;&lt;/script&gt;</span></code></pre>
+  </div>
+
+  <div class="hint">
+    The contact form is loaded below
+    <span class="arrow">↘</span>
+  </div>
+
+  <div style="max-width: 600px; margin: 0 auto 40px;">
+    <!-- Identified user (default — uses HMAC verification) -->
+    <script
+      src="<%= request.base_url %>/form/<%= @account_id %>/<%= @form_id %>/embed.js"
+      data-identifier="<%= @identifier %>"
+      data-signature="<%= @signature %>"
+      data-email="<%= @email %>"
+      data-name="<%= @name %>"
+      data-locale="en">
+    </script>
+
+    <!-- Anonymous user (uncomment to test pre-chat form flow) -->
+    <!--
+    <script
+      src="<%= request.base_url %>/<%= @account_id %>/<%= @widget_id %>/embed.js"
+      data-locale="en">
+    </script> -->
+  </div>
+  
+</body>
+</html>

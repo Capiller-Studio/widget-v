@@ -1,0 +1,34 @@
+(function() {
+  "use strict";
+
+  var WIDGET_HOST = "<%= request.base_url %>";
+  var ACCOUNT_ID  = "<%= @account_id %>";
+  var FORM_ID     = "<%= @form_id %>";
+
+  // Read configuration from the script tag's data attributes
+  var scriptTag = document.currentScript;
+  var locale     = scriptTag.getAttribute("data-locale") || "en";
+  var identifier = scriptTag.getAttribute("data-identifier") || "";
+  var signature  = scriptTag.getAttribute("data-signature") || "";
+  var email      = scriptTag.getAttribute("data-email") || "";
+  var name       = scriptTag.getAttribute("data-name") || "";
+
+  // Build the iframe src
+  var src = WIDGET_HOST + "/" + locale + "/form/" + ACCOUNT_ID + "/" + FORM_ID;
+  var params = [];
+  if (identifier) params.push("identifier=" + encodeURIComponent(identifier));
+  if (signature)  params.push("signature=" + encodeURIComponent(signature));
+  if (email)      params.push("email=" + encodeURIComponent(email));
+  if (name)       params.push("name=" + encodeURIComponent(name));
+  if (params.length > 0) src += "?" + params.join("&");
+
+  // Create iframe
+  var iframe = document.createElement("iframe");
+  iframe.src = src;
+  iframe.style.cssText = "width:100%;min-height:600px;border:1px solid #e2e8f0;border-radius:12px;background:#fff;box-shadow:0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);";
+  iframe.setAttribute("allow", "microphone; camera");
+  iframe.title = "Contact Form";
+
+  // Insert iframe right after the script tag
+  scriptTag.parentNode.insertBefore(iframe, scriptTag.nextSibling);
+})();
