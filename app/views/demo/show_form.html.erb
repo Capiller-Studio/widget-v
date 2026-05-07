@@ -151,7 +151,7 @@
   <div class="embed-section">
     <h2>Embed Code Used on This Page</h2>
     <pre><code><span class="tag">&lt;script</span>
-  <span class="attr">src</span>=<span class="val">"<%= request.base_url %>/form/<%= @account_id %>/<%= @form_id %>/embed.js"</span>
+  <span class="attr">src</span>=<span class="val">"<%= request.base_url %>/f/<%= @account_id %>/<%= @form_id %>/embed.js"</span>
   <span class="attr">data-identifier</span>=<span class="val">"<%= @identifier %>"</span>
   <span class="attr">data-signature</span>=<span class="val">"<%= @signature %>"</span>
   <span class="attr">data-email</span>=<span class="val">"<%= @email %>"</span>
@@ -167,7 +167,7 @@
   <div style="max-width: 600px; margin: 0 auto 40px;">
     <!-- Identified user (default — uses HMAC verification) -->
     <script
-      src="<%= request.base_url %>/form/<%= @account_id %>/<%= @form_id %>/embed.js"
+      src="<%= request.base_url %>/f/<%= @account_id %>/<%= @form_id %>/embed.js"
       data-identifier="<%= @identifier %>"
       data-signature="<%= @signature %>"
       data-email="<%= @email %>"
@@ -178,7 +178,7 @@
     <!-- Anonymous user (uncomment to test pre-chat form flow) -->
     <!--
     <script
-      src="<%= request.base_url %>/<%= @account_id %>/<%= @widget_id %>/embed.js"
+      src="<%= request.base_url %>/f/<%= @account_id %>/<%= @widget_id %>/embed.js"
       data-locale="en">
     </script> -->
   </div>

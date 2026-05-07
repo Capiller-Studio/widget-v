@@ -14,7 +14,7 @@
   var name       = scriptTag.getAttribute("data-name") || "";
 
   // Build the iframe src
-  var src = WIDGET_HOST + "/" + locale + "/form/" + ACCOUNT_ID + "/" + FORM_ID;
+  var src = WIDGET_HOST + "/" + locale + "/f/" + ACCOUNT_ID + "/" + FORM_ID;
   var params = [];
   if (identifier) params.push("identifier=" + encodeURIComponent(identifier));
   if (signature)  params.push("signature=" + encodeURIComponent(signature));
