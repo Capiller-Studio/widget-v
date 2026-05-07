@@ -17,7 +17,7 @@
 
   // Build the iframe src (NOT set until first open)
   function buildSrc() {
-    var src = WIDGET_HOST + "/" + locale + "/" + ACCOUNT_ID + "/" + WIDGET_ID;
+    var src = WIDGET_HOST + "/" + locale + "/w/" + ACCOUNT_ID + "/" + WIDGET_ID;
     var params = [];
     if (identifier) params.push("identifier=" + encodeURIComponent(identifier));
     if (signature)  params.push("signature=" + encodeURIComponent(signature));
