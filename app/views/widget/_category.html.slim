@@ -3,7 +3,7 @@
     .header-1 style="padding-left: 0px;"
       = button_to help_center_path(format: :turbo_stream), method: :get, class: "chat-button", style: "margin-left: 10px;", form: { data: { turbo_stream: true } } do
         = inline_svg_tag("left_arrow.svg", style: "width: 24px; height: 24px; fill: white;")
-      .header-text style="margin: auto;" = @category.name
+      .header-text style="margin-left: 2px;" = @category.name
 
     .main.main-gradient
       .help-section

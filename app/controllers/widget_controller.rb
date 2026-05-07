@@ -6,6 +6,7 @@ class WidgetController < ApplicationController
   before_action :set_widget
   before_action :identify_customer
   before_action :set_locale
+  before_action :set_agents
 
   def index; end
 
@@ -74,7 +75,7 @@ class WidgetController < ApplicationController
     # Manually query HelpCenter::Article via CategoryResource joins since `has_many :articles` isn't strictly defined on Category
     base_query = HelpCenter::Article.joins(
       "INNER JOIN help_center_category_resources ON help_center_category_resources.resource_id = help_center_articles.id AND help_center_category_resources.resource_type = 'HelpCenter::Article'"
-    ).where(help_center_category_resources: { category_id: @category.id }).active
+    ).where(help_center_category_resources: { category_id: @category.id }).published
     
     @pagy, @articles = pagy(base_query, items: 10)
     
@@ -160,12 +161,24 @@ class WidgetController < ApplicationController
 
     return render(plain: "Widget not configured", status: :service_unavailable) unless @inbox
 
-    @agents = @inbox.users.includes(avatar_attachment: :blob).limit(3)
+    # @agents = @inbox.users.includes(avatar_attachment: :blob).limit(3)
 
     session[:account_id] = @account.id
     session[:widget_id] = @widget.id
   rescue ActiveRecord::RecordNotFound
     render plain: "Widget not found", status: :not_found
+  end
+
+  def set_agents
+    find_or_set_conversation
+    assignee = @conversation&.conversation_members
+                            &.assignees
+                            &.agents
+                            &.includes(member: { avatar_attachment: :blob })
+                            &.first
+                            &.member
+
+    @agents = assignee ? [assignee] : @inbox.users.includes(avatar_attachment: :blob).limit(3)
   end
 
   def identify_customer

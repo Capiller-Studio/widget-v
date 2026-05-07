@@ -196,12 +196,23 @@ export default class extends Controller {
 
     const messageEl = document.createElement("div")
     messageEl.classList.add("client-reply")
+
+    const attachmentsEl = document.createElement("div")
+    attachmentsEl.classList.add("msg-attachments")
+
+    const attachmentImgWrapper = document.createElement("div")
+    attachmentImgWrapper.classList.add("msg-attachment-img")
+
     const img = document.createElement("img")
     img.src = URL.createObjectURL(file)
     img.classList.add("attachment-image")
     img.onload = () => this.scrollToBottom()
-    messageEl.appendChild(img)
+
+    attachmentImgWrapper.appendChild(img)
+    attachmentsEl.appendChild(attachmentImgWrapper)
+    messageEl.appendChild(attachmentsEl)
     list.appendChild(messageEl)
+
     this.scrollToBottom()
   }
 
