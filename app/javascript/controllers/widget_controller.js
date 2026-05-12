@@ -94,6 +94,8 @@ export default class extends Controller {
     files.forEach(file => {
       if (file.type.startsWith('image/')) {
         this.appendOutgoingImage(file)
+      } else if (file.type.startsWith('audio/')) {
+        this.appendOutgoingAudio(file)
       } else {
         this.appendOutgoingMessage(`📎 ${file.name}`)
       }
@@ -157,9 +159,9 @@ export default class extends Controller {
       }
 
       // Only render agent messages (outgoing = not incoming)
-      if (message && !message.incoming && message.content) {
+      if (message && !message.incoming && (message.content || (message.attachments || []).length)) {
         const sender = message.sender || {}
-        this.appendIncomingMessage(message.content, sender.avatar_url, sender.display_name || sender.name)
+        this.appendIncomingMessage(message.content, message.attachments || [], sender.avatar_url, sender.display_name || sender.name)
 
         this.unreadCount++
         this.notifyParent("deskbolic:unread", { count: this.unreadCount })
@@ -167,7 +169,7 @@ export default class extends Controller {
     }
   }
 
-  appendIncomingMessage(content, agentAvatarUrl, agentName) {
+  appendIncomingMessage(content, attachments = [], agentAvatarUrl, agentName) {
     const list = document.getElementById("messages-list")
     if (!list) return
 
@@ -214,6 +216,88 @@ export default class extends Controller {
     list.appendChild(messageEl)
 
     this.scrollToBottom()
+  }
+
+  appendOutgoingAudio(file) {
+    const list = document.getElementById("messages-list")
+    if (!list) return
+
+    const messageEl = document.createElement("div")
+    messageEl.classList.add("client-reply")
+
+    const attachmentsEl = document.createElement("div")
+    attachmentsEl.classList.add("msg-attachments")
+
+    const audioWrapper = document.createElement("div")
+    audioWrapper.classList.add("msg-attachment-audio")
+
+    const audio = document.createElement("audio")
+    audio.controls = true
+    audio.preload = "metadata"
+    audio.src = URL.createObjectURL(file)
+
+    audioWrapper.appendChild(audio)
+    attachmentsEl.appendChild(audioWrapper)
+    messageEl.appendChild(attachmentsEl)
+    list.appendChild(messageEl)
+
+    this.scrollToBottom()
+  }
+
+  appendAttachments(container, attachments) {
+    if (!attachments.length) return
+
+    const attachmentsEl = document.createElement("div")
+    attachmentsEl.classList.add("msg-attachments")
+
+    attachments.forEach((attachment) => {
+      if (!attachment.url) return
+
+      if (attachment.attachment_type === "audio" || (attachment.content_type || "").startsWith("audio/")) {
+        const audioWrapper = document.createElement("div")
+        audioWrapper.classList.add("msg-attachment-audio")
+
+        const audio = document.createElement("audio")
+        audio.controls = true
+        audio.preload = "metadata"
+        audio.src = attachment.url
+
+        audioWrapper.appendChild(audio)
+        attachmentsEl.appendChild(audioWrapper)
+      } else if (attachment.attachment_type === "image" || (attachment.content_type || "").startsWith("image/")) {
+        const wrapper = document.createElement("div")
+        wrapper.classList.add("msg-attachment-img")
+
+        const img = document.createElement("img")
+        img.src = attachment.url
+        img.classList.add("attachment-image")
+        img.alt = attachment.filename || "Image attachment"
+        img.onload = () => this.scrollToBottom()
+
+        wrapper.appendChild(img)
+        attachmentsEl.appendChild(wrapper)
+      } else {
+        const link = document.createElement("a")
+        link.href = attachment.url
+        link.target = "_blank"
+        link.rel = "noopener"
+        link.classList.add("msg-attachment-file")
+
+        const icon = document.createElement("span")
+        icon.classList.add("file-icon")
+        icon.textContent = "📄"
+
+        const name = document.createElement("span")
+        name.classList.add("file-name")
+        name.textContent = attachment.filename || "Attachment"
+
+        link.appendChild(icon)
+        link.appendChild(name)
+        attachmentsEl.appendChild(link)
+      }
+    })
+
+    if (attachmentsEl.childElementCount) container.appendChild(attachmentsEl)
   }
 
   scrollToBottom() {
