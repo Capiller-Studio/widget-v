@@ -86,6 +86,11 @@
     &:hover {
       background: rgba(0, 0, 0, 0.06);
     }
+
+    &.is-recording {
+      background: rgba(239, 68, 68, 0.14);
+      color: #dc2626;
+    }
   }
 
   /* --- Send Button --- */
@@ -213,6 +218,16 @@
     flex-shrink: 0;
   }
 
+  .de-file-audio-icon {
+    flex-shrink: 0;
+    padding: 5px 7px;
+    border-radius: 6px;
+    background: rgba(119, 141, 255, 0.12);
+    color: var(--widget-primary-color, #778DFF);
+    font-family: $font-family-inter-medium;
+    font-size: 11px;
+  }
+
   .de-file-name {
     font-family: $font-family-inter-regular;
     color: #475569;
@@ -306,6 +321,15 @@
       transition: opacity 0.2s;
 
       &:hover { opacity: 0.9; }
+    }
+  }
+
+  .msg-attachment-audio {
+    audio {
+      width: 220px;
+      max-width: 100%;
+      height: 36px;
+      display: block;
     }
   }
 

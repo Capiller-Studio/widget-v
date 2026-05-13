@@ -1,7 +1,7 @@
 /**
  * Deskbolic Lexical Editor
  * A lightweight rich-text editor for the widget chat input.
- * Supports: text, emoji, file attachments, Enter-to-send.
+ * Supports: text, emoji, file attachments, voice notes, Enter-to-send.
  */
 import { createEditor, $getRoot, $createParagraphNode, $createTextNode, $getSelection } from 'lexical'
 import { registerRichText } from '@lexical/rich-text'
@@ -19,6 +19,8 @@ export class DeskbolicEditor {
       placeholder: 'Type a message…',
       emoji: 'Emoji',
       attach_file: 'Attach file',
+      record_voice: 'Record voice',
+      stop_recording: 'Stop recording',
       send: 'Send message',
       emoji_smileys: '😀 Smileys',
       emoji_gestures: '👋 Gestures',
@@ -55,13 +57,14 @@ export class DeskbolicEditor {
     this.fileBtn = this._createToolbarBtn('📎', this.i18n.attach_file, 'de-file-btn')
     this.fileInput = document.createElement('input')
     this.fileInput.type = 'file'
-    this.fileInput.accept = 'image/*,video/*,.pdf,.doc,.docx,.txt,.zip'
+    this.fileInput.accept = 'image/*,video/*,audio/*,.pdf,.doc,.docx,.txt,.zip'
     this.maxFiles = 5
     this.maxFileSize = 5 * 1024 * 1024
     this.maxVideoSize = 20 * 1024 * 1024
+    this.maxAudioSize = 20 * 1024 * 1024
     this.fileInput.multiple = true
     this.fileInput.style.display = 'none'
-
+    this.voiceBtn = this._createToolbarBtn('🎙️', this.i18n.record_voice, 'de-voice-btn')
     // Send button
     this.sendBtn = document.createElement('button')
     this.sendBtn.type = 'button'
@@ -87,6 +90,7 @@ export class DeskbolicEditor {
     // Assemble
     this.toolbar.appendChild(this.emojiBtn)
     this.toolbar.appendChild(this.fileBtn)
+    this.toolbar.appendChild(this.voiceBtn)
     this.toolbar.appendChild(this.fileInput)
 
     // input row
@@ -158,7 +162,7 @@ export class DeskbolicEditor {
     // File button
     this.fileBtn.addEventListener('click', () => this.fileInput.click())
     this.fileInput.addEventListener('change', () => this._handleFileSelect())
-
+    this.voiceBtn.addEventListener('click', () => this._toggleRecording())
     // Close emoji picker on outside click
     document.addEventListener('click', (e) => {
       if (this._emojiPickerOpen && !this.emojiPicker.contains(e.target) && !this.emojiBtn.contains(e.target)) {
@@ -180,7 +184,7 @@ export class DeskbolicEditor {
 
   _handleSubmit() {
     const text = this.getTextContent()
-    if (!text && this._selectedFiles.length === 0) return
+    if (!text && (!this._selectedFiles || this._selectedFiles.length === 0)) return
 
     if (this.onSubmit) {
       this.onSubmit(text, this._selectedFiles || [])
@@ -222,9 +226,13 @@ export class DeskbolicEditor {
 
   _validateFile(file) {
     const isVideo = file.type.startsWith('video/')
+    const isAudio = file.type.startsWith('audio/')
 
     if (isVideo && file.size > this.maxVideoSize) {
       return `Video exceeds 20MB limit`
+    }
+    if (isAudio && file.size > this.maxAudioSize) {
+      return `Audio exceeds 20MB limit`
     }
     if (!isVideo && file.size > this.maxFileSize) {
       return `File exceeds 5MB limit`
@@ -250,6 +258,11 @@ export class DeskbolicEditor {
         img.src = URL.createObjectURL(file)
         img.classList.add('de-file-thumb')
         chip.appendChild(img)
+      } else if (file.type.startsWith('audio/')) {
+        const audioIcon = document.createElement('span')
+        audioIcon.classList.add('de-file-audio-icon')
+        audioIcon.textContent = 'Voice'
+        chip.appendChild(audioIcon)
       }
 
       const name = document.createElement('span')
@@ -274,6 +287,54 @@ export class DeskbolicEditor {
   _clearFiles() {
     this._selectedFiles = []
     this._renderFilePreview()
+  }
+
+  async _toggleRecording() {
+    if (this._mediaRecorder && this._mediaRecorder.state === 'recording') {
+      this._mediaRecorder.stop()
+      return
+    }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) {
+      this._showError('Voice recording is not supported in this browser')
+      return
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const chunks = []
+      this._mediaRecorder = new MediaRecorder(stream)
+
+      this._mediaRecorder.addEventListener('dataavailable', (event) => {
+        if (event.data && event.data.size > 0) chunks.push(event.data)
+      })
+
+      this._mediaRecorder.addEventListener('stop', () => {
+        stream.getTracks().forEach((track) => track.stop())
+        this.voiceBtn.classList.remove('is-recording')
+        this.voiceBtn.setAttribute('aria-label', this.i18n.record_voice)
+
+        if (!chunks.length) return
+
+        const type = this._mediaRecorder.mimeType || 'audio/webm'
+        const extension = type.includes('mp4') ? 'm4a' : 'webm'
+        const file = new File(chunks, `voice-note-${Date.now()}.${extension}`, { type })
+        const error = this._validateFile(file)
+        if (error) {
+          this._showError(error)
+          return
+        }
+
+        this._selectedFiles = (this._selectedFiles || []).concat(file)
+        this._renderFilePreview()
+      })
+
+      this._mediaRecorder.start()
+      this.voiceBtn.classList.add('is-recording')
+      this.voiceBtn.setAttribute('aria-label', this.i18n.stop_recording)
+    } catch (error) {
+      this._showError('Microphone permission is required to record voice')
+    }
   }
 
   // --- Emoji Picker ---
