@@ -256,6 +256,28 @@
             /* @mixin margin-right 1; */
           }
 
+          .single-emoji-message {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+            width: 120px;
+            height: 120px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 88px;
+            line-height: 1;
+            border-radius: 0;
+            box-shadow: none;
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+          }
+
+          .client-reply.single-emoji-message {
+            display: flex;
+            margin-left: auto;
+            margin-right: 20px;
+          }
+
           .agent-msg {
             display: flex;
             margin-left: 20px;
@@ -265,6 +287,11 @@
               background: #F2F4F5;
               color: rgba(0, 0, 0, 0.8);
               border-top-left-radius: 0px;
+            }
+            .agent-reply.single-emoji-message {
+              background: transparent;
+              color: inherit;
+              border-top-left-radius: 0;
             }
             .person-img {
               width: 32px;
