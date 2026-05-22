@@ -20,7 +20,8 @@
     - if message.sender.is_a?(User) && message.sender.avatar.attached?
       = image_tag(message.sender.avatar.variant(:thumb), class: "person-img")
     - else
-      .person-img.avatar-placeholder = message.sender.try(:display_name)&.first&.upcase || "A"
+      .person-img.avatar-placeholder class=avatar_fallback_color_class(message.sender.display_name || message.sender.first_name || message.sender.email)
+        = message.sender.try(:display_name)&.first&.upcase || "A"
     .agent-reply class="#{'single-emoji-message' if single_emoji_message?(message.content)}"
       - if message.content.present?
         = single_emoji_message?(message.content) ? message.content.strip : message.content

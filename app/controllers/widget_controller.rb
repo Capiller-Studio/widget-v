@@ -171,6 +171,8 @@ class WidgetController < ApplicationController
 
   def set_agents
     find_or_set_conversation
+
+    @all_agents = @inbox.users.includes(avatar_attachment: :blob).limit(3)
     assignee = @conversation&.conversation_members
                             &.assignees
                             &.agents
@@ -178,7 +180,7 @@ class WidgetController < ApplicationController
                             &.first
                             &.member
 
-    @agents = assignee ? [assignee] : @inbox.users.includes(avatar_attachment: :blob).limit(3)
+    @agents = assignee ? [assignee] : @all_agents
   end
 
   def identify_customer
