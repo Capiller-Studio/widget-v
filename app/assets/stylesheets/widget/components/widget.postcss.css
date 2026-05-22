@@ -3,7 +3,6 @@
   position: fixed;
   right: -13px;
   bottom: -20px;
-  /* box-sizing: border-box; */
 
   .chat-button {
     background: none;
@@ -12,59 +11,25 @@
 
   .chat-screen {
     width: 470px;
-    /* @mixin width-size 24.5; */
     .homepage {
       display: flex;
       flex-direction: column;
-      /* @mixin flex-column $justify-start, $align-normal; */
       border-radius: 18px;
       margin-right: 30px;
       margin-bottom: 40px;
       overflow: hidden;
       box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); 
       height: 80vh;
-      /* height: 600px; */
-      /* @mixin height-size 36.5; */
       .header-1 {
+        @mixin flex-row $justify-center, $align-center;
         font-family: $font-family-inter-semibold;
-        display: flex;
-        align-items: center;
-        flex-direction: row;
-        /* @mixin flex-row $justify-start, $align-center; */
         background: #778DFF;
         color: #F8F8F8;
-        /* @mixin padding-left 1.7; */
-        padding-left: 33px;
+        padding: 0 20px;
         gap: 0px 95px;
-        /* @mixin gap-size 0, 4.9; */
         min-height: 80px;
-        /* @mixin height-size 5.2; */
-        .svg-icons {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          .person-img {
-            width: 35px;
-            height: 35px;
-            border-radius: 25px;
-            margin-left: -20px;
-            border: 2px solid #F8F8F8;
-            object-fit: cover;
-            &.avatar-placeholder {
-              background-color: #F8F8F8;
-              color: #193dde;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-family: $font-family-inter-semibold;
-              font-size: 14px;
-            }
-          }
-        }
         .header-text {
           font-size: 18px;
-          margin-left: -20px;
         }
       }
       .header-2 {
@@ -79,28 +44,6 @@
         .intro-heading-addons {
           display: flex;
           align-items: center;
-          margin-left: 13px;
-          .person-img {
-            width: 35px;
-            height: 35px;
-            border-radius: 25px;
-            border: 2px solid #F8F8F8;
-            margin-left: -13px;
-          }
-          .avatar-placeholder {
-            width: 35px;
-            height: 35px;
-            border-radius: 25px;
-            border: 2px solid #F8F8F8;
-            margin-left: -13px;
-            background: var(--widget-primary-color, #778DFF);
-            color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: $font-family-inter-semibold;
-            font-size: 14px;
-          }
           .team {
             font-size: 36px;
             font-family: $font-family-inter-semibold;
@@ -130,7 +73,6 @@
           display: none;
         }
 
-        /* When used as chat container, flex layout keeps input at bottom */
         &.main-content {
           overflow: hidden;
           .conversation {
@@ -221,7 +163,6 @@
         .conversation {
           font-family: $font-family-inter-regular;
           font-size: 14px;
-          /* @mixin font-size 0.7; */
           overflow: auto;
           scrollbar-width: none;
 
@@ -233,27 +174,21 @@
             color: rgba(114, 119, 122, 1);
             text-align: center;
             margin-bottom: 10px;
-            /* @mixin margin-bottom 0.5; */
           }
 
           .client-reply, .agent-reply {
             padding: 16px;
-            /* @mixin padding-size 0.8, 0.8; */
             width: fit-content;
             border-radius: 20px;
             margin-bottom: 10px;
-            /* @mixin border-radius 1;
-            @mixin margin-bottom 0.5; */
           }
 
           .client-reply {
-            background: #778DFF;
             color: #F8F8F8;
             border-bottom-right-radius: 0px;
             justify-self: flex-end;
             margin-right: 20px;
             margin-left: 170px;
-            /* @mixin margin-right 1; */
           }
 
           .single-emoji-message {
@@ -306,7 +241,6 @@
               border-radius: 25px;
               border: 2px solid #F8F8F8;
               margin-left: -13px;
-              background: var(--widget-primary-color, #778DFF);
               color: #fff;
               display: flex;
               align-items: center;
@@ -385,74 +319,41 @@
           border-radius: 18px;
           margin: 20px 16px;
           padding: 16px 20px;
-          /* @mixin border-radius 0.9;
-          @mixin margin-size 1, 0.8;
-          @mixin padding-size 0.8, 1; */
           background: #F8F8F8;
           .heading {
             font-family: $font-family-inter-medium;
             font-size: 20px;
-            /* @mixin font-size 1; */
           }
           .sub-heading {
             display: flex;
             align-items: center;
             justify-content: start;
-            /* @mixin flex-row $justify-start, $align-center; */
             gap: 10px;
-            .svg-icons {
-              margin-left: 19px;
-              /* @mixin margin-left 1; */
-              .person-img {
-                width: 45px;
-                height: 45px;
-                margin: 10px 0px;
-                border-radius: 25px;
-                margin-left: -20px;
-                /* @mixin width-size 2.3;
-                @mixin height-size 2.3;
-                @mixin margin-size 0.5, 0;
-                @mixin border-radius 1.3; 
-                @mixin margin-left -1; */
-                border: 2px solid #F8F8F8;
-              }
-            }
             .reply-time {
               font-family: $font-family-inter-regular;
               color: rgba(0, 0, 0, 0.4);
               margin-top: -10px;
-              /* @mixin font-size 0.8;
-              @mixin margin-top -0.5; */
+              font-size: 14px;
               .time {
-                font-size: 14px;
-                /* @mixin font-size 0.7; */
+                font-size: 12px;
                 font-family: $font-family-inter-semibold;
-                display: flex;
-                /* @mixin flex-row $justify-start, $align-center; */
+                @mixin flex-row $justify-start, $align-center;
                 gap: 5px;
-                /* .msg-svg {
-                  margin-right: 5px;
-                  @mixin margin-right 0.3;
-                } */
                 color: #778DFF;
                 text-align: start;
                 margin-top: 4px;
-                /* @mixin margin-top 0.2; */
               }
             }
           }
           .start-conv-btn {
             font-family: $font-family-jakarta-semibold;
             font-size: 14px;
-            /* @mixin font-size 0.7; */
             display: flex;
             align-items: center;
             justify-content: center;
-            /* @mixin flex-row $justify-center, $align-center; */
             gap: 5px;
             border: none;
             border-radius: 12px;
-            /* @mixin border-radius 0.6; */
             width: 100%;
             background: #778DFF;
             color: #F8F8F8;
@@ -469,17 +370,13 @@
               border: none;
               width: 92%;
               font-size: 14px;
-              /* @mixin font-size 0.7; */
               font-family: $font-family-inter-regular;
               border-radius: 12px;
-              /* @mixin border-radius 0.6; */
               background-color: rgba(0, 0, 0, 0.05);
               background-image: url('search.svg');
               background-position: 9px 15px; 
               background-repeat: no-repeat;
               padding: 15px 0px 15px 30px;
-              /* @mixin padding-size 0.78, 0;
-              @mixin padding-left 1.56; */
               &:focus {
                 outline: none;
               }
@@ -487,12 +384,9 @@
           }
           .articles-row {
             margin: 20px 0px;
-            /* @mixin margin-size 1, 0; */
             display: flex;
             flex-direction: row;
             gap: 20px;
-            /* @mixin flex-row $justify-start, $align-normal;
-            @mixin gap-size 1, 1; */
             overflow: auto;
             scrollbar-width: none;
 
@@ -502,86 +396,62 @@
 
             .article {
               min-width: 150px;
-              /* @mixin min-width 7.8; */
               border-radius: 12px;
-              /* @mixin border-radius 0.6; */
               padding: 20px;
-              /* @mixin padding-size 1, 1; */
               background: rgba(255, 239, 227, 1);
               .heading {
                 font-family: $font-family-inter-semibold;
                 font-size: 18px;
-                /* @mixin font-size 0.9; */
               }
               .description {
                 font-family: $font-family-inter-regular;
                 font-size: 14px;
-                /* @mixin font-size 0.7; */
                 color: rgba(0, 0, 0, 0.4);
                 margin: 15px 0px 23px;
-                /* @mixin margin-size 0.7, 0;
-                @mixin margin-bottom 1.2; */
               }
               .user-name {
                 font-family: $font-family-inter-medium;
                 font-size: 15px;
-                /* @mixin font-size 0.8; */
               }
             }
           }
           .articles-col {
             display: flex;
             flex-direction: column;
-            /* @mixin flex-column $justify-start, $align-normal; */
             overflow: auto;
-            /* height: 274px; */
-            /* @mixin height-size 14.3; */
             scrollbar-width: none;
-
             &::-webkit-scrollbar {
               display: none;
             }
             
             .article {
               margin-bottom: 20px;
-              /* @mixin margin-bottom 1; */
               border-radius: 12px;
               padding: 16px 0px;
-              /* @mixin border-radius 0.6;
-              @mixin padding-size 0.8, 0; */
               background: #E3F5FF;
               .heading {
                 font-family: $font-family-inter-semibold;
                 font-size: 18px;
                 padding: 0px 16px;
-                /* @mixin font-size 0.9;
-                @mixin padding-size 0, 0.8; */
               }
               .description {
                 font-family: $font-family-inter-regular;
                 font-size: 14px;
-                /* @mixin font-size 0.7; */
                 color: rgba(0, 0, 0, 0.4);
                 margin: 12px 0px;
                 padding: 0px 16px;
-                /* @mixin margin-size 0.6, 0;
-                @mixin padding-size 0, 0.8; */
               }
               .more-details {
                 padding: 14px 0px 0px;
                 border-top: 1px solid rgba(0, 0, 0, 0.2);
                 padding-left: 16px;
                 padding-right: 16px;
-                /* @mixin padding-size 0.7, 0.8;
-                @mixin padding-bottom 0; */
                 .view-more {
                   display: flex;
                   align-items: center;
                   justify-content: space-between;
-                  /* @mixin flex-row $justify-between, $align-center; */
                   font-family: $font-family-inter-semibold;
                   font-size: 14px;
-                  /* @mixin font-size 0.7; */
                   text-decoration: none;
                   color: rgba(0, 0, 0, 0.8);
                 }
@@ -607,28 +477,23 @@
         display: flex;
         justify-content: space-around;
         flex-direction: row;
-        /* @mixin flex-row $justify-around, $align-normal; */
         font-family: $font-family-inter-semibold;
         .footer-btn {
           color: rgba(0, 0, 0, 0.8);
           padding: 15px;
-          /* @mixin padding-size 0.8, 0.8; */
           display: flex;
           background: none;
           border: none;
           align-items: center;
           flex-direction: column;
           gap: 7px;
-          /* @mixin flex-column $justify-between, $align-center; */
           justify-content: space-between;
           text-decoration: none;
           svg {
             width: 30px;
             height: 30px;
-            /* @mixin height-size 1.6;
-            @mixin width-size 1.6; */
           }
-          .svg-purple {
+          .theme-svg {
             display: none;
           }
           .svg-btn {
@@ -637,7 +502,7 @@
         }
         .active {
           color: #778DFF;
-          .svg-purple {
+          .theme-svg {
             display: block;
           }
           .svg-btn {
@@ -645,6 +510,71 @@
           }
         }
       }
+    }
+  }
+}
+
+
+.svg-icons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  .person-img {
+    width: 35px;
+    height: 35px;
+    border-radius: 25px;
+    border: 2px solid #F8F8F8;
+    object-fit: cover;
+    &.avatar-placeholder {
+      color: #F8F8F8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: $font-family-inter-semibold;
+      font-size: 14px;
+    }
+  }
+}
+.svg-icons > *:not(:first-child) {
+  margin-left: -15px;
+}
+
+.header-1 {
+  .svg-icons {
+    position: absolute;
+    left: 20px;
+    .person-img {
+      width: 30px;
+      height: 30px;
+      &.avatar-placeholder {
+        font-size: 11px;
+      }
+    }
+  }
+  .svg-icons > *:not(:first-child) {
+    margin-left: -12px;
+  }
+}
+.intro-heading-addons {
+  .svg-icons {
+    .person-img {
+      width: 31px;
+      height: 31px;
+      &.avatar-placeholder {
+        font-size: 11px;
+      }
+    }
+  }
+  .svg-icons > *:not(:first-child) {
+    margin-left: -11px;
+  }
+}
+.sub-heading {
+  margin: 20px 0;
+  .svg-icons {
+    .person-img {
+      width: 38px;
+      height: 38px;
     }
   }
 }

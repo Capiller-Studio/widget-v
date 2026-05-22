@@ -6,7 +6,8 @@
           - if agent.avatar.attached?
             = image_tag(agent.avatar.variant(:thumb), class: "person-img")
           - else
-            .person-img.avatar-placeholder = agent.display_name&.first&.upcase || "A"
+            .person-img.avatar-placeholder class=avatar_fallback_color_class(agent.display_name || agent.first_name || agent.email)
+              = agent.display_name&.first&.upcase || "A"
       .header-text = t('widget.conversations.title')
     .main.main-gradient.main-content
       .conversation-history#conversations-list
