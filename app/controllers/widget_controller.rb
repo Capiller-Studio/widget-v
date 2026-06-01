@@ -156,8 +156,8 @@ class WidgetController < ApplicationController
 
   def set_widget
     @account = Account.find(params[:account_id] || session[:account_id])
-    @widget = Channel::WebWidget.find_by!(account: @account, id: params[:widget_id] || session[:widget_id])
-    @inbox = @widget.inboxes.first
+    @widget = Channel::WebWidget.includes(:primary_inbox).find_by!(account: @account, id: params[:widget_id] || session[:widget_id])
+    @inbox = @widget.primary_inbox
 
     return render(plain: "Widget not configured", status: :service_unavailable) unless @inbox
 
@@ -171,14 +171,9 @@ class WidgetController < ApplicationController
 
   def set_agents
     find_or_set_conversation
+    assignee = @conversation&.assignee
 
     @all_agents = @inbox.users.includes(avatar_attachment: :blob).limit(3)
-    assignee = @conversation&.conversation_members
-                            &.assignees
-                            &.agents
-                            &.includes(member: { avatar_attachment: :blob })
-                            &.first
-                            &.member
 
     @agents = assignee ? [assignee] : @all_agents
   end
