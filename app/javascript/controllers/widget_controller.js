@@ -176,7 +176,8 @@ export default class extends Controller {
     const messageEl = document.createElement("div")
     messageEl.classList.add("agent-msg")
     const avatarSrc = agentAvatarUrl || this.avatarUrlValue || '/assets/human.png'
-    messageEl.innerHTML = `<img src="${avatarSrc}" class="person-img" alt="${this.escapeHtml(agentName || 'Agent')}" title="${this.escapeHtml(agentName || 'Agent')}"><div class="agent-reply">${this.escapeHtml(content)}</div>`
+    const emojiClass = this.isSingleEmojiMessage(content) ? " single-emoji-message" : ""
+    messageEl.innerHTML = `<img src="${avatarSrc}" class="person-img" alt="${this.escapeHtml(agentName || 'Agent')}" title="${this.escapeHtml(agentName || 'Agent')}"><div class="agent-reply${emojiClass}">${this.escapeHtml(content)}</div>`
     list.appendChild(messageEl)
     this.scrollToBottom()
   }
@@ -187,6 +188,7 @@ export default class extends Controller {
 
     const messageEl = document.createElement("div")
     messageEl.classList.add("client-reply")
+    if (this.isSingleEmojiMessage(content)) messageEl.classList.add("single-emoji-message")
     messageEl.textContent = content
     list.appendChild(messageEl)
     this.scrollToBottom()
@@ -335,6 +337,19 @@ export default class extends Controller {
     const div = document.createElement("div")
     div.textContent = text
     return div.innerHTML
+  }
+
+  isSingleEmojiMessage(content) {
+    const text = (content || "").trim()
+    if (!text) return false
+
+    const segments = typeof Intl !== "undefined" && Intl.Segmenter
+      ? Array.from(new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(text))
+      : Array.from(text)
+    if (segments.length !== 1) return false
+
+    const singleEmojiPattern = /^(?:(?:[\u{1F1E6}-\u{1F1FF}]{2})|(?:[0-9#*]\uFE0F?\u20E3)|(?:(?:\p{Emoji_Presentation}|\p{Extended_Pictographic}\uFE0F?)\p{Emoji_Modifier}?(?:\u200D(?:\p{Emoji_Presentation}|\p{Extended_Pictographic}\uFE0F?)\p{Emoji_Modifier}?)*))$/u
+    return singleEmojiPattern.test(text)
   }
 
   get csrfToken() {
