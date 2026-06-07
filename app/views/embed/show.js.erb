@@ -38,8 +38,14 @@
   bubble.setAttribute("aria-label", "Open chat");
   bubble.setAttribute("role", "button");
   bubble.setAttribute("tabindex", "0");
+
+  <% if @widget_logo_url.present? %>
+  bubble.innerHTML = '<img src="<%= @widget_logo_url %>" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">';
+  <% else %>
   bubble.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
-  bubble.style.cssText = "position:fixed;bottom:20px;" + position + ":20px;width:" + BUBBLE_SIZE + ";height:" + BUBBLE_SIZE + ";border-radius:50%;background:" + themeColor + ";color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:2147483646;transition:transform 0.2s ease;border:none;font-family:sans-serif;";
+  <% end %>
+
+  bubble.style.cssText = "position:fixed;bottom:20px;" + position + ":20px;width:" + BUBBLE_SIZE + ";height:" + BUBBLE_SIZE + ";border-radius:50%;background:" + themeColor + ";color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:2147483646;transition:transform 0.2s ease;border:none;font-family:sans-serif;overflow:hidden;";
 
   // --- Unread badge ---
   var badge = document.createElement("span");

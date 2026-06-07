@@ -50,12 +50,17 @@ html
         max-width: 100% !important;
       }
 
-  body
+  body data-controller="live-preview"
     #deskbolic-widget
       = yield
 
-    / Branding footer (hidden for white-label plans)
-    - unless @widget&.ui_configurations&.dig("hide_branding")
+    / Branding footer
+    - if @widget&.account&.custom_branding_enabled? && @widget&.custom_branding?
+      - custom_text = @widget&.ui_configurations&.dig("footer_text")
+      - if custom_text.present?
+        .powered-by
+          span = custom_text
+    - else
       .powered-by
         a href="https://deskbolic.com" target="_blank" rel="noopener"
           | Powered by Deskbolic

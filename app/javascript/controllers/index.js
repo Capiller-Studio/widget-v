@@ -9,3 +9,6 @@ application.register("hello", HelloController)
 
 import WidgetController from "./widget_controller"
 application.register("widget", WidgetController)
+
+import LivePreviewController from "./live_preview_controller"
+application.register("live-preview", LivePreviewController)
