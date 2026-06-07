@@ -7,7 +7,8 @@
     = inline_svg_tag("messages_purple.svg", class: "theme-svg")
     = inline_svg_tag("messages.svg", class: "svg-btn")
     | Conversations
-  = button_to help_center_path(format: :turbo_stream), method: :get, class: "footer-btn #{active[:help]}", form: { data: { turbo_stream: true } } do
-    = inline_svg_tag("help_purple.svg", class: "theme-svg")
-    = inline_svg_tag("help.svg", class: "svg-btn")
-    | Help Center
+  - if @widget.help_center_enabled?
+    = button_to help_center_path(format: :turbo_stream), method: :get, class: "footer-btn #{active[:help]}", form: { data: { turbo_stream: true } } do
+      = inline_svg_tag("help_purple.svg", class: "theme-svg")
+      = inline_svg_tag("help.svg", class: "svg-btn")
+      | Help Center

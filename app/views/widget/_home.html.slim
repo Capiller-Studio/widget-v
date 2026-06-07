@@ -2,7 +2,10 @@
   .homepage
     .header-2
       .logo
-        = image_tag("logo.png", alt: "deskbolic image")
+        - if @widget.account&.custom_branding_enabled? && @widget.custom_branding? && @widget.logo.attached?
+          = image_tag(@widget.scaled_logo, alt: "Widget Logo", style: "width: 100%; height: 100%; object-fit: contain;")
+        - else
+          = image_tag("logo.png", alt: "deskbolic image")
       .intro-heading
         = @widget.welcome_title.presence || t('widget.home.title')
       .intro-heading-addons
@@ -18,21 +21,30 @@
         = @widget.welcome_tagline.presence || t('widget.home.subheading')
     .main 
       .start-conv
-        .heading = t('widget.home.start_conversation')
-        .sub-heading
-          .svg-icons
-            - @all_agents.each do |agent|
-              - if agent.avatar.attached?
-                = image_tag(agent.avatar.variant(:thumb), class: "person-img")
-              - else
-                .person-img.avatar-placeholder class=avatar_fallback_color_class(agent.display_name || agent.first_name || agent.email)
-                  = agent.display_name&.first&.upcase || "A"
-          .reply-time
-            = t('widget.home.reply_time')
-            .time
-              = inline_svg_tag("message.svg", class: "theme-svg")
-              = t('widget.home.reply_time_unit')
-        = button_to messages_path(format: :turbo_stream), method: :get, class: "start-conv-btn", form: { data: { turbo_stream: true } } do
-          p = t('widget.home.start_conversation')
-          = inline_svg_tag("send.svg")
+        - if @is_offline
+          .heading = t('widget.home.offline_heading', default: "We're currently offline")
+          .sub-heading
+            .reply-time style="margin-left: 0; padding-left: 0; border: none;"
+              = t('widget.home.offline_subheading', default: "Leave a message and we'll get back to you soon.")
+          = button_to messages_path(format: :turbo_stream), method: :get, class: "start-conv-btn", form: { data: { turbo_stream: true } } do
+            p = t('widget.home.leave_message', default: "Leave a Message")
+            = inline_svg_tag("send.svg")
+        - else
+          .heading = t('widget.home.start_conversation')
+          .sub-heading
+            .svg-icons
+              - @all_agents.each do |agent|
+                - if agent.avatar.attached?
+                  = image_tag(agent.avatar.variant(:thumb), class: "person-img")
+                - else
+                  .person-img.avatar-placeholder class=avatar_fallback_color_class(agent.display_name || agent.first_name || agent.email)
+                    = agent.display_name&.first&.upcase || "A"
+            .reply-time
+              = @widget.reply_time_text.presence || t('widget.home.reply_time')
+              .time
+                = inline_svg_tag("message.svg", class: "theme-svg")
+                = t('widget.home.reply_time_unit')
+          = button_to messages_path(format: :turbo_stream), method: :get, class: "start-conv-btn", form: { data: { turbo_stream: true } } do
+            p = t('widget.home.start_conversation')
+            = inline_svg_tag("send.svg")
     = render("footer", active: { home: "active" })
