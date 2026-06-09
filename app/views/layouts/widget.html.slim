@@ -55,7 +55,7 @@ html
       = yield
 
     / Branding footer
-    - if @widget&.account&.custom_branding_enabled? && @widget&.custom_branding?
+    - if @widget&.account&.feature_enabled?(:custom_branding) && @widget&.custom_branding?
       - custom_text = @widget&.ui_configurations&.dig("footer_text")
       - if custom_text.present?
         .powered-by

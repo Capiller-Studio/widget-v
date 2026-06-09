@@ -14,7 +14,7 @@ class EmbedController < ApplicationController
 
     widget = Channel::WebWidget.find_by(account_id: @account_id, id: @widget_id)
     @theme_color = widget&.theme_color
-    if widget&.account&.custom_branding_enabled? && widget&.custom_branding? && widget&.launcher_icon&.attached?
+    if widget&.account&.feature_enabled?(:custom_branding) && widget&.custom_branding? && widget&.launcher_icon&.attached?
       @widget_logo_url = Rails.application.routes.url_helpers.rails_blob_url(widget.scaled_launcher_icon, only_path: true)
     end
 
