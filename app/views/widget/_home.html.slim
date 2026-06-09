@@ -2,7 +2,7 @@
   .homepage
     .header-2
       .logo
-        - if @widget.account&.custom_branding_enabled? && @widget.custom_branding? && @widget.logo.attached?
+        - if @widget.account&.feature_enabled?(:custom_branding) && @widget.custom_branding? && @widget.logo.attached?
           = image_tag(@widget.scaled_logo, alt: "Widget Logo", style: "width: 100%; height: 100%; object-fit: contain;")
         - else
           = image_tag("logo.png", alt: "deskbolic image")
