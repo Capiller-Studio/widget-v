@@ -175,7 +175,7 @@ class WidgetController < ApplicationController
           end
         elsif field.entity_type == "customer"
           customer_data[:data][field.key] = value
-        elsif field.entity_type == "conversation" || field.entity_type == "contact_form"
+        elsif field.entity_type == "conversation"
           conversation_data[:data][field.key] = value
         end
       end
