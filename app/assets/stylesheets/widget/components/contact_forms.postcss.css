@@ -1,0 +1,122 @@
+#deskbolic-widget .chat-screen .chat-header {
+  padding-left: 20px;
+}
+
+#deskbolic-widget .chat-screen .chat-header h3 {
+  font-family: $font-family-inter-medium;
+  font-size: 16px;
+  color: #1e293b;
+  /* margin: 0; */
+}
+
+#deskbolic-widget .chat-screen .chat-header p.welcome-text {
+  font-family: $font-family-inter-regular;
+  font-size: 14px;
+  color: #64748b;
+}
+
+#deskbolic-widget .chat-screen .chat-box .messages-container {
+  padding: 0px 20px 24px;
+  overflow-y: auto;
+}
+
+#deskbolic-widget .chat-screen .chat-box .contact-form .form-group {
+  margin-bottom: 15px;
+}
+
+#deskbolic-widget .chat-screen .chat-box .contact-form label {
+  display: block;
+  margin-bottom: 6px;
+  font-family: $font-family-inter-medium;
+  font-size: 13px;
+  color: #334155;
+}
+
+#deskbolic-widget .chat-screen .chat-box .contact-form label .required-asterisk {
+  color: #ef4444;
+  margin-left: 3px;
+}
+
+#deskbolic-widget .chat-screen .chat-box .contact-form .form-control {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 16px;
+  border: 2px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  background: #fff;
+  font-family: $font-family-inter-regular;
+  font-size: 14px;
+  color: #1e293b;
+  transition: border-color 0.2s;
+  outline: none;
+}
+
+#deskbolic-widget .chat-screen .chat-box .contact-form .form-control::placeholder {
+  color: #94a3b8;
+  font-family: $font-family-inter-regular;
+  font-size: 14px;
+}
+
+#deskbolic-widget .chat-screen .chat-box .contact-form .form-control:focus {
+  border-color: var(--widget-primary-color, #778DFF);
+}
+
+#deskbolic-widget .chat-screen .chat-box .contact-form textarea.form-control {
+  padding: 12px 16px;
+  resize: vertical;
+}
+
+#deskbolic-widget .chat-screen .chat-box .contact-form select.form-control {
+  padding: 12px 16px;
+  appearance: auto;
+}
+
+#deskbolic-widget .chat-screen .chat-box .contact-form .form-actions {
+  margin-top: 16px;
+  padding-bottom: 8px;
+}
+
+#deskbolic-widget .chat-screen .chat-box .contact-form .btn-submit {
+  width: 100%;
+  padding: 14px 24px;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-family: $font-family-jakarta-semibold;
+  font-size: 15px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+#deskbolic-widget .chat-screen .chat-box .contact-form .btn-submit:hover {
+  opacity: 0.9;
+}
+
+#deskbolic-widget .chat-screen .chat-box .honeypot {
+  display: none;
+}
+
+#deskbolic-widget .alert {
+  padding: 0px 8px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  font-family: $font-family-inter-regular;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+#deskbolic-widget .alert.alert-green {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+#deskbolic-widget .alert.alert-red {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
