@@ -22,10 +22,10 @@ class ContactFormsController < ApplicationController
       render plain: "Spam detected.", status: :ok
       return
     end
-
+    form_params = params.except(:action, :controller, :account_id, :form_id, :locale, :signature, :identifier, :attachments, :nickname).to_unsafe_h
     conversation = Channels::ContactForms::ConversationCreator.call(
       contact_form_channel: @form,
-      form_params: params.except(:action, :controller, :account_id, :form_id, :locale, :signature, :identifier),
+      form_params: form_params,
       attachments: params[:attachments]
     )
 
@@ -33,11 +33,12 @@ class ContactFormsController < ApplicationController
       if @form.configurations["submit_redirect_url"].present?
         redirect_to @form.configurations["submit_redirect_url"], allow_other_host: true
       else
-        @success_message = I18n.t(@form.configurations["success_message_i18n_key"] || "contact_form.success", default: "Thank you! Your message has been received.")
-        render :success
+        success_message = I18n.t(@form.configurations["success_message_i18n_key"] || "contact_form.success", default: "Thank you! Your message has been received.")
+        redirect_to contact_form_entry_path, notice: success_message
       end
     else
-      redirect_to contact_form_entry_path, alert: "Something went wrong. Please try again."
+      failure_message = I18n.t("contact_form.failure", default: "Something went wrong. Please try again.")
+      redirect_to contact_form_entry_path, alert: failure_message
     end
   end
 
