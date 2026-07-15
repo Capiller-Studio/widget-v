@@ -1,0 +1,47 @@
+ar:
+  widget:
+    home:
+      title: "لنبدأ محادثة جديدة مع"
+      team: "فريقنا!"
+      subheading: "نساعد أعمالك على النمو من خلال ربطك بعملائك."
+      start_conversation: "بدء محادثة"
+      reply_time: "وقت الرد المعتاد"
+      reply_time_unit: "بضع دقائق"
+    conversations:
+      title: "المحادثات"
+      messages: "الرسائل"
+      new_conversation: "بدء محادثة"
+      no_conversations: "لا توجد محادثات بعد."
+    footer:
+      home: "الرئيسية"
+      conversations: "المحادثات"
+      help: "مركز المساعدة"
+    chat:
+      placeholder: "اكتب رسالة..."
+      typing: "يكتب..."
+    editor:
+      placeholder: "اكتب رسالة…"
+      emoji: "رموز تعبيرية"
+      attach_file: "إرفاق ملف"
+      send: "إرسال الرسالة"
+      emoji_smileys: "😀 وجوه مبتسمة"
+      emoji_gestures: "👋 إيماءات"
+      emoji_hearts: "❤️ قلوب"
+      emoji_objects: "🎉 أشياء"
+    pre_chat:
+      title: "بدء محادثة"
+      subtitle: "يسعدنا سماع رأيك. يرجى مشاركة بياناتك للبدء."
+      name: "اسمك"
+      name_placeholder: "أحمد محمد"
+      email: "البريد الإلكتروني"
+      email_placeholder: "you@example.com"
+      submit: "بدء الدردشة"
+    help_center:
+      title: "مركز المساعدة"
+      search_placeholder: "البحث عن مقالات..."
+      no_results: "لم يتم العثور على مقالات."
+  contact_form:
+    success_title: "تم إرسال الرسالة!"
+    send_message: "إرسال الرسالة"
+    success: "شكراً لك! تم استلام رسالتك."
+    failure: "حدث خطأ ما. يرجى المحاولة مرة أخرى."

@@ -35,17 +35,28 @@
       .header-2 {
         background: linear-gradient(215deg, rgb(119, 141, 255, 0.25), transparent, transparent);
         padding: 30px 30px 0px;
+        .logo {
+          width: auto;
+          height: 35px;
+          margin-bottom: 10px;
+          img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: left;
+          }
+        }
         .intro-heading {
-          font-size: 36px;
+          font-size: 28px;
           font-family: $font-family-inter-semibold;
           padding: 8px 0px 0px;
-          padding-right: 105px;
+          /* padding-right: 105px; */
         }
         .intro-heading-addons {
           display: flex;
           align-items: center;
           .team {
-            font-size: 36px;
+            font-size: 28px;
             font-family: $font-family-inter-semibold;
             color: #778DFF;
             padding-left: 7px;
@@ -53,10 +64,10 @@
         }
         .intro-subheading {
           font-family: $font-family-inter-regular;
-          font-size: 18px;
+          font-size: 16px;
           line-height: 30px;
           color: rgba(0, 0, 0, 0.8);
-          padding: 16px 105px 0px 0px;
+          padding: 16px 16px 0px 0px;
         }
       }
 
@@ -65,9 +76,9 @@
         flex-direction: column;
         flex-basis: 100%;
         background: linear-gradient(0deg, rgb(119, 141, 255, 0.25), transparent);
-        overflow: auto;
+        /* overflow: auto; */
         scrollbar-width: none;
-        padding: 10px;
+        padding:0px 10px;
         padding-top: 0px;
         &::-webkit-scrollbar {
           display: none;
@@ -104,37 +115,68 @@
           display: flex;
           flex-direction: column;
           gap: 12px;
-          padding: 16px;
+          padding: 16px 10px;
           overflow: auto;
           height: 100%;
 
           .conv-item {
             display: flex;
-            flex-direction: column;
+            /* flex-direction: column; */
             background: #fff;
-            border: 1px solid rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--widget-primary-color, #778DFF);
             border-radius: 12px;
-            padding: 16px;
+            padding: 11px;
             cursor: pointer;
             transition: all 0.2s ease;
             text-align: left;
             width: 100%;
+            align-items: center;
+            gap:10px;
 
             &:hover {
               background: #F8F8F8;
-              border-color: #778DFF;
+              border-color: var(--widget-primary-color, #778DFF);
             }
-
+             .conv-icon {
+                  svg {
+                      width: 33px;   /* set your desired size */
+                      height: 33px;
+                      display: block;
+                      color: var(--widget-primary-color, #778DFF);
+                      fill: var(--widget-primary-color, #778DFF);
+                    }
+                }
             .conv-details {
               display: flex;
               flex-direction: column;
               gap: 4px;
               width: 100%;
 
-              .title {
-                font-family: $font-family-inter-semibold;
-                font-size: 15px;
-                color: #1e293b;
+              .conv-details-top {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                width: 100%;
+
+                .title {
+                  width:30px;
+                  font-family: $font-family-inter-semibold;
+                  font-size: 14px;
+                  color: #1e293b;
+                  flex: 1;
+                  white-space: nowrap;
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                }
+
+                .conv-time {
+                  font-family: $font-family-inter-regular;
+                  font-size: 11px;
+                  color: #94a3b8;
+                  white-space: nowrap;
+                  margin-left: 8px;
+                  flex-shrink: 0;
+                }
               }
 
               .last-msg {
@@ -177,29 +219,124 @@
           }
 
           .client-reply, .agent-reply {
-            padding: 16px;
+            padding: 12px 16px;
             width: fit-content;
             border-radius: 20px;
             margin-bottom: 10px;
           }
 
+          .msg-attachment-audio {
+            min-width: 213px;
+            max-width: 300px;
+          }
+
+          .audio-player-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          }
+
+          .audio-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+          }
+
+          .audio-btn img {
+            width: 18px;
+            height: 18px;
+            display: block;
+          }
+
+          .audio-mute-btn img {
+            width: 18px;
+            height: 18px;
+            /* opacity: 0.7; */
+          }
+
+          .audio-waveform {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            /* flex: 1; */
+            width: 151px;
+            height: 36px;
+          }
+
+          .waveform-bar {
+            width: 3px;
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.35);
+            transition: background 0.15s ease;
+            min-height: 4px;
+          }
+
+          .waveform-bar.active {
+            background: rgba(255, 255, 255, 0.9);
+          }
+
+          .audio-time {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.7);
+            font-family: $font-family-inter-regular;
+            position: absolute;
+            /* right: 0; */
+            left: 30px;
+            bottom: -16px;
+          }
+
+          .msg-attachment-audio {
+            position: relative;
+          }
+
+          .agent-reply .msg-attachment-audio {
+            min-width: 213px;
+            max-width: 300px;
+          }
+
+          .agent-reply .waveform-bar {
+            background: rgba(0, 0, 0, 0.15);
+          }
+
+          .agent-reply .waveform-bar.active {
+            background: rgba(0, 0, 0, 0.6);
+          }
+
+          .agent-reply .audio-time {
+            color: rgba(0, 0, 0, 0.5);
+          }
+
           .client-reply {
             color: #F8F8F8;
-            border-bottom-right-radius: 0px;
+            /* border-bottom-right-radius: 0px; */
             justify-self: flex-end;
-            margin-right: 20px;
-            margin-left: 170px;
+            margin-right: 10px;
+            margin-left: 65px;
+            border-top-right-radius: 0px;
+              .msg-time{
+                    font-size: 11px;
+                color: #d6d3d3;
+                margin-left: 16px;
+                text-align: end;
+                margin-top: 5px;
+              }
+          
           }
 
           .single-emoji-message {
             background: transparent;
-            color: inherit;
+            /* color: inherit; */
             padding: 0;
-            width: 120px;
-            height: 120px;
+            /* width: 120px;
+            height: 120px; */
             display: inline-flex;
-            align-items: center;
-            justify-content: center;
+            align-items: end;
+            justify-content: end;
             font-size: 88px;
             line-height: 1;
             border-radius: 0;
@@ -208,25 +345,52 @@
           }
 
           .client-reply.single-emoji-message {
+            background-color: transparent !important;
             display: flex;
             margin-left: auto;
             margin-right: 20px;
+            flex-direction: column;
+           .msg-time{
+            color: #504040;
+            font-family: $font-family-inter-regular;
           }
+          }
+   
 
           .agent-msg {
             display: flex;
             margin-left: 20px;
             gap: 10px;
             .agent-reply {
-              width: 180px;
               background: #F2F4F5;
               color: rgba(0, 0, 0, 0.8);
               border-top-left-radius: 0px;
+              .msg-time{
+                font-size: 11px;
+                color: #8c7070;
+                margin-left: 16px;
+                text-align: end;
+                margin-top: 5px;
+              }
+              p{
+                margin: 0;
+              }
             }
             .agent-reply.single-emoji-message {
               background: transparent;
               color: inherit;
               border-top-left-radius: 0;
+              display: flex;
+              flex-direction: column;
+              align-items: flex-start;
+              .msg-time {
+                font-family: $font-family-inter-regular;
+                font-size: 11px;
+                color: #94a3b8;
+                text-align: left;
+                margin-top: 4px;
+                margin-left: 30px;
+              }
             }
             .person-img {
               width: 32px;
@@ -475,7 +639,7 @@
       .footer {
         border-top: 3px solid rgba(0, 0, 0, 0.05);
         display: flex;
-        justify-content: space-around;
+        justify-content: space-evenly;
         flex-direction: row;
         font-family: $font-family-inter-semibold;
         .footer-btn {
@@ -514,6 +678,58 @@
   }
 }
 
+.msg-image-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 99999;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  cursor: pointer;
+}
+
+.msg-image-overlay.active {
+  opacity: 1;
+}
+
+.msg-image-overlay-img {
+  max-width: 95vw;
+  max-height: 95vh;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+  cursor: default;
+}
+
+.msg-image-overlay-close {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  border: none;
+  color: #fff;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  z-index: 100000;
+}
+
+.msg-image-overlay-close:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
 
 .svg-icons {
   display: flex;

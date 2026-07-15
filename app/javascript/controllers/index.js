@@ -12,3 +12,6 @@ application.register("widget", WidgetController)
 
 import LivePreviewController from "./live_preview_controller"
 application.register("live-preview", LivePreviewController)
+
+import AudioPlayerController from "./audio_player_controller"
+application.register("audio-player", AudioPlayerController)

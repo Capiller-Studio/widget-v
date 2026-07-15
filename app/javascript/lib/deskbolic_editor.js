@@ -50,11 +50,19 @@ export class DeskbolicEditor {
     this.toolbar = document.createElement('div')
     this.toolbar.classList.add('de-toolbar')
 
-    // Emoji button
-    this.emojiBtn = this._createToolbarBtn('😊', this.i18n.emoji, 'de-emoji-btn')
+    // Emoji button (SVG)
+    this.emojiBtn = this._createToolbarBtn(`
+      <svg width="19" height="20" viewBox="0 0 19 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M9.49288 2.87501C8.08399 2.87642 6.70715 3.29549 5.53638 4.07925C4.36562 4.86301 3.4535 5.97627 2.91532 7.27832C2.37714 8.58037 2.23705 10.0127 2.51278 11.3944C2.7885 12.776 3.46765 14.0449 4.46439 15.0407C5.46112 16.0364 6.73068 16.7143 8.1126 16.9886C9.49452 17.263 10.9268 17.1214 12.2283 16.582C13.5298 16.0425 14.6421 15.1292 15.4247 13.9577C16.2073 12.7862 16.625 11.4089 16.625 10C16.6255 9.06361 16.4413 8.13631 16.0829 7.2712C15.7246 6.40608 15.1991 5.62012 14.5366 4.95832C13.8742 4.29652 13.0877 3.77186 12.2222 3.41438C11.3568 3.0569 10.4293 2.87361 9.49288 2.87501ZM9.5 15.5417C8.40396 15.5417 7.33254 15.2167 6.42122 14.6077C5.5099 13.9988 4.79961 13.1333 4.38017 12.1207C3.96074 11.1081 3.85099 9.99386 4.06482 8.91888C4.27864 7.8439 4.80644 6.85647 5.58145 6.08146C6.35647 5.30644 7.3439 4.77865 8.41888 4.56482C9.49386 4.351 10.6081 4.46074 11.6207 4.88018C12.6333 5.29961 13.4988 6.0099 14.1077 6.92122C14.7167 7.83255 15.0417 8.90397 15.0417 10C15.0419 10.7278 14.8987 11.4485 14.6202 12.1209C14.3418 12.7934 13.9336 13.4044 13.419 13.919C12.9044 14.4336 12.2934 14.8418 11.6209 15.1202C10.9485 15.3987 10.2278 15.5419 9.5 15.5417ZM11.9581 11.425H13.148C12.8618 12.1597 12.3604 12.7908 11.7095 13.2357C11.0585 13.6807 10.2885 13.9188 9.5 13.9188C8.71155 13.9188 7.94146 13.6807 7.29055 13.2357C6.63964 12.7908 6.13825 12.1597 5.852 11.425H7.04188C7.28982 11.858 7.64771 12.2178 8.07935 12.468C8.511 12.7182 9.00108 12.85 9.5 12.85C9.99893 12.85 10.489 12.7182 10.9207 12.468C11.3523 12.2178 11.7102 11.858 11.9581 11.425ZM5.9375 8.21876C5.9375 8.00738 6.00018 7.80075 6.11762 7.62499C6.23506 7.44924 6.40197 7.31225 6.59726 7.23136C6.79255 7.15047 7.00744 7.12931 7.21476 7.17054C7.42207 7.21178 7.61251 7.31357 7.76197 7.46304C7.91144 7.6125 8.01323 7.80294 8.05447 8.01026C8.09571 8.21757 8.07454 8.43246 7.99365 8.62775C7.91276 8.82304 7.77577 8.98996 7.60002 9.10739C7.42426 9.22483 7.21763 9.28751 7.00625 9.28751C6.7228 9.28751 6.45096 9.17491 6.25053 8.97448C6.0501 8.77405 5.9375 8.50221 5.9375 8.21876ZM10.925 8.21876C10.925 8.00738 10.9877 7.80075 11.1051 7.62499C11.2226 7.44924 11.3895 7.31225 11.5848 7.23136C11.78 7.15047 11.9949 7.12931 12.2023 7.17054C12.4096 7.21178 12.6 7.31357 12.7495 7.46304C12.8989 7.6125 13.0007 7.80294 13.042 8.01026C13.0832 8.21757 13.062 8.43246 12.9811 8.62775C12.9003 8.82304 12.7633 8.98996 12.5875 9.10739C12.4118 9.22483 12.2051 9.28751 11.9938 9.28751C11.7103 9.28751 11.4385 9.17491 11.238 8.97448C11.0376 8.77405 10.925 8.50221 10.925 8.21876Z" fill="black" fill-opacity="0.8"/>
+      </svg>
+    `, this.i18n.emoji, 'de-emoji-btn')
 
-    // File upload button + hidden input
-    this.fileBtn = this._createToolbarBtn('📎', this.i18n.attach_file, 'de-file-btn')
+    // File upload button + hidden input (SVG)
+    this.fileBtn = this._createToolbarBtn(`
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M7.4092 3.16635C9.45945 1.1161 12.7836 1.1161 14.8338 3.16635C16.8841 5.2166 16.8841 8.54072 14.8338 10.591L9.53052 15.8943C8.06605 17.3587 5.69169 17.3587 4.22722 15.8943C4.02342 15.6905 3.84745 15.4683 3.69977 15.2328L4.3352 14.8344L3.69977 15.2328C2.79177 13.7847 2.96663 11.8516 4.22722 10.591L9.53052 5.28767C10.4092 4.40899 11.8338 4.40899 12.7125 5.28767C13.5912 6.16635 13.5912 7.59097 12.7125 8.46965L7.4092 13.773C7.11631 14.0658 6.64143 14.0658 6.34854 13.773C6.05565 13.4801 6.05565 13.0052 6.34854 12.7123L11.6518 7.40899C11.9447 7.1161 11.9447 6.64123 11.6518 6.34833C11.3589 6.05544 10.8841 6.05544 10.5912 6.34833L5.28788 11.6516C4.53261 12.4069 4.4259 13.5672 4.97062 14.436C5.05879 14.5766 5.16439 14.7101 5.28788 14.8336C6.16656 15.7123 7.59118 15.7123 8.46986 14.8336L13.7732 9.53031C15.2376 8.06585 15.2376 5.69148 13.7732 4.22701C12.3087 2.76255 9.93433 2.76255 8.46986 4.22701L3.16656 9.53031C2.87367 9.82321 2.39879 9.82321 2.1059 9.53031C1.81301 9.23742 1.81301 8.76254 2.1059 8.46965L7.4092 3.16635Z" fill="black" fill-opacity="0.8"/>
+      </svg>
+    `, this.i18n.attach_file, 'de-file-btn')
     this.fileInput = document.createElement('input')
     this.fileInput.type = 'file'
     this.fileInput.accept = 'image/*,video/*,audio/*,.pdf,.doc,.docx,.txt,.zip'
@@ -64,7 +72,22 @@ export class DeskbolicEditor {
     this.maxAudioSize = 20 * 1024 * 1024
     this.fileInput.multiple = true
     this.fileInput.style.display = 'none'
-    this.voiceBtn = this._createToolbarBtn('🎙️', this.i18n.record_voice, 'de-voice-btn')
+    // Voice button (SVG)
+    this.voiceBtn = this._createToolbarBtn(`
+      <svg width="17" height="18" viewBox="0 0 17 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <g clip-path=\"url(#clip0_903_34515)\">
+          <path d=\"M8.5 1.20825C7.93641 1.20825 7.39591 1.43214 6.9974 1.83065C6.59888 2.22916 6.375 2.76967 6.375 3.33325V8.99992C6.375 9.5635 6.59888 10.104 6.9974 10.5025C7.39591 10.901 7.93641 11.1249 8.5 11.1249C9.06358 11.1249 9.60409 10.901 10.0026 10.5025C10.4011 10.104 10.625 9.5635 10.625 8.99992V3.33325C10.625 2.76967 10.4011 2.22916 10.0026 1.83065C9.60409 1.43214 9.06358 1.20825 8.5 1.20825V1.20825Z\" stroke=\"black\" stroke-opacity=\"0.8\" stroke-width=\"1.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>
+          <path d=\"M13.4582 7.58325V8.99992C13.4582 10.315 12.9358 11.5761 12.0059 12.506C11.076 13.4359 9.81487 13.9583 8.49984 13.9583C7.18481 13.9583 5.92363 13.4359 4.99377 12.506C4.0639 11.5761 3.5415 10.315 3.5415 8.99992V7.58325\" stroke=\"black\" stroke-opacity=\"0.8\" stroke-width=\"1.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>
+          <path d=\"M8.5 13.9583V16.7916\" stroke=\"black\" stroke-opacity=\"0.8\" stroke-width=\"1.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>
+          <path d=\"M5.6665 16.7917H11.3332\" stroke=\"black\" stroke-opacity=\"0.8\" stroke-width=\"1.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>
+        </g>
+        <defs>
+          <clipPath id=\"clip0_903_34515\">
+            <rect width=\"17\" height=\"17\" fill=\"white\" transform=\"translate(0 0.5)\"/>
+          </clipPath>
+        </defs>
+      </svg>
+    `, this.i18n.record_voice, 'de-voice-btn')
     // Send button
     this.sendBtn = document.createElement('button')
     this.sendBtn.type = 'button'
@@ -107,12 +130,12 @@ export class DeskbolicEditor {
     this.container.appendChild(this.emojiPicker)
   }
 
-  _createToolbarBtn(emoji, label, cls) {
+  _createToolbarBtn(iconMarkup, label, cls) {
     const btn = document.createElement('button')
     btn.type = 'button'
     btn.classList.add('de-toolbar-btn', cls)
     btn.setAttribute('aria-label', label)
-    btn.textContent = emoji
+    btn.innerHTML = iconMarkup
     return btn
   }
 
@@ -169,6 +192,51 @@ export class DeskbolicEditor {
         this._closeEmojiPicker()
       }
     })
+  }
+
+  _showRecordingIndicator() {
+    this._clearFiles()
+    const chip = document.createElement('div')
+    chip.classList.add('de-file-chip', 'de-recording-chip')
+    chip.id = 'de-recording-indicator'
+
+    const micIcon = document.createElement('span')
+    micIcon.classList.add('de-recording-icon')
+    micIcon.textContent = '🎤'
+    chip.appendChild(micIcon)
+
+    const label = document.createElement('span')
+    label.classList.add('de-recording-label')
+    label.textContent = 'Recording...'
+    chip.appendChild(label)
+
+    const dots = document.createElement('span')
+    dots.classList.add('de-recording-dots')
+    dots.innerHTML = '<span></span><span></span><span></span>'
+    chip.appendChild(dots)
+
+    const stopBtn = document.createElement('button')
+    stopBtn.type = 'button'
+    stopBtn.classList.add('de-file-remove', 'de-recording-stop')
+    stopBtn.textContent = '×'
+    stopBtn.addEventListener('click', () => {
+      if (this._mediaRecorder && this._mediaRecorder.state === 'recording') {
+        this._mediaRecorder.stop()
+      }
+    })
+    chip.appendChild(stopBtn)
+
+    this.filePreview.innerHTML = ''
+    this.filePreview.appendChild(chip)
+    this.filePreview.style.display = 'flex'
+  }
+
+  _hideRecordingIndicator() {
+    const indicator = document.getElementById('de-recording-indicator')
+    if (indicator) indicator.remove()
+    if (!this._selectedFiles || this._selectedFiles.length === 0) {
+      this.filePreview.style.display = 'none'
+    }
   }
 
   _showError(message) {
@@ -332,6 +400,7 @@ export class DeskbolicEditor {
       this._mediaRecorder.start()
       this.voiceBtn.classList.add('is-recording')
       this.voiceBtn.setAttribute('aria-label', this.i18n.stop_recording)
+      this._showRecordingIndicator()
     } catch (error) {
       this._showError('Microphone permission is required to record voice')
     }
