@@ -2,7 +2,7 @@
 
 module ApplicationHelper
   def single_emoji_message?(content)
-    text = content.to_s.strip
+    text = strip_tags(content).to_s.strip
     return false if text.blank?
 
     clusters = text.scan(/\X/)

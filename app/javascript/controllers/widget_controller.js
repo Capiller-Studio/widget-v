@@ -8,7 +8,11 @@ export default class extends Controller {
     connectionToken: String,
     url: String,
     avatarUrl: String,
-    cableUrl: String
+    cableUrl: String,
+    playIcon: String,
+    pauseIcon: String,
+    volumeIcon: String,
+    muteIcon: String
   }
 
   connect() {
@@ -30,6 +34,9 @@ export default class extends Controller {
 
     // Auto-scroll to bottom on page load
     this.scrollToBottom()
+
+    // Setup click-to-expand on chat images
+    this.setupImagePreview()
 
     if (!this.connectionTokenValue) {
       console.warn("[Deskbolic] No connection token — ActionCable will NOT connect")
@@ -142,6 +149,22 @@ export default class extends Controller {
     console.error("[Deskbolic] WebSocket connection rejected. Invalid token.")
   }
 
+  formatTime(date) {
+    const d = date || new Date()
+    let hours = d.getHours()
+    const minutes = d.getMinutes().toString().padStart(2, "0")
+    const ampm = hours >= 12 ? "PM" : "AM"
+    hours = hours % 12 || 12
+    return `${hours}:${minutes} ${ampm}`
+  }
+
+  createMsgTime() {
+    const timeEl = document.createElement("div")
+    timeEl.classList.add("msg-time")
+    timeEl.textContent = this.formatTime()
+    return timeEl
+  }
+
   // --- Message handling ---
 
   handleReceived(data) {
@@ -178,6 +201,13 @@ export default class extends Controller {
     const avatarSrc = agentAvatarUrl || this.avatarUrlValue || '/assets/human.png'
     const emojiClass = this.isSingleEmojiMessage(content) ? " single-emoji-message" : ""
     messageEl.innerHTML = `<img src="${avatarSrc}" class="person-img" alt="${this.escapeHtml(agentName || 'Agent')}" title="${this.escapeHtml(agentName || 'Agent')}"><div class="agent-reply${emojiClass}">${this.escapeHtml(content)}</div>`
+    const replyDiv = messageEl.querySelector(".agent-reply")
+    if (replyDiv) replyDiv.after(this.createMsgTime())
+
+    if (attachments.length) {
+      this.appendAttachments(messageEl, attachments)
+    }
+
     list.appendChild(messageEl)
     this.scrollToBottom()
   }
@@ -190,6 +220,7 @@ export default class extends Controller {
     messageEl.classList.add("client-reply")
     if (this.isSingleEmojiMessage(content)) messageEl.classList.add("single-emoji-message")
     messageEl.textContent = content
+    messageEl.appendChild(this.createMsgTime())
     list.appendChild(messageEl)
     this.scrollToBottom()
   }
@@ -215,6 +246,7 @@ export default class extends Controller {
     attachmentImgWrapper.appendChild(img)
     attachmentsEl.appendChild(attachmentImgWrapper)
     messageEl.appendChild(attachmentsEl)
+    messageEl.appendChild(this.createMsgTime())
     list.appendChild(messageEl)
 
     this.scrollToBottom()
@@ -232,15 +264,63 @@ export default class extends Controller {
 
     const audioWrapper = document.createElement("div")
     audioWrapper.classList.add("msg-attachment-audio")
+    audioWrapper.dataset.controller = "audio-player"
+    audioWrapper.dataset.audioPlayerPlayIconValue = this.playIconValue || "/assets/play.svg"
+    audioWrapper.dataset.audioPlayerPauseIconValue = this.pauseIconValue || "/assets/pause.svg"
+    audioWrapper.dataset.audioPlayerVolumeIconValue = this.volumeIconValue || "/assets/volume.svg"
+    audioWrapper.dataset.audioPlayerMuteIconValue = this.muteIconValue || "/assets/mute.svg"
 
     const audio = document.createElement("audio")
-    audio.controls = true
+    audio.dataset.audioPlayerTarget = "audio"
     audio.preload = "metadata"
     audio.src = URL.createObjectURL(file)
 
+    const controls = document.createElement("div")
+    controls.classList.add("audio-player-controls")
+
+    const playBtn = document.createElement("button")
+    playBtn.type = "button"
+    playBtn.classList.add("audio-btn")
+    playBtn.dataset.action = "audio-player#toggle"
+    playBtn.dataset.audioPlayerTarget = "playButton"
+
+    const playIcon = document.createElement("img")
+    playIcon.src = this.playIconValue || "/assets/play.svg"
+    playIcon.dataset.audioPlayerTarget = "playIcon"
+    playIcon.alt = "Play"
+    playBtn.appendChild(playIcon)
+
+    const waveform = document.createElement("div")
+    waveform.classList.add("audio-waveform")
+    waveform.dataset.audioPlayerTarget = "waveform"
+
+    const muteBtn = document.createElement("button")
+    muteBtn.type = "button"
+    muteBtn.classList.add("audio-btn", "audio-mute-btn")
+    muteBtn.dataset.action = "audio-player#toggleMute"
+    muteBtn.dataset.audioPlayerTarget = "muteButton"
+
+    const muteIcon = document.createElement("img")
+    muteIcon.src = this.volumeIconValue || "/assets/volume.svg"
+    muteIcon.dataset.audioPlayerTarget = "muteIcon"
+    muteIcon.alt = "Mute"
+    muteBtn.appendChild(muteIcon)
+
+    controls.appendChild(playBtn)
+    controls.appendChild(waveform)
+    controls.appendChild(muteBtn)
+
+    const timeDisplay = document.createElement("div")
+    timeDisplay.classList.add("audio-time")
+    timeDisplay.dataset.audioPlayerTarget = "timeDisplay"
+    timeDisplay.textContent = "0:00"
+
     audioWrapper.appendChild(audio)
+    audioWrapper.appendChild(controls)
+    audioWrapper.appendChild(timeDisplay)
     attachmentsEl.appendChild(audioWrapper)
     messageEl.appendChild(attachmentsEl)
+    messageEl.appendChild(this.createMsgTime())
     list.appendChild(messageEl)
 
     this.scrollToBottom()
@@ -258,13 +338,60 @@ export default class extends Controller {
       if (attachment.attachment_type === "audio" || (attachment.content_type || "").startsWith("audio/")) {
         const audioWrapper = document.createElement("div")
         audioWrapper.classList.add("msg-attachment-audio")
+        audioWrapper.dataset.controller = "audio-player"
+        audioWrapper.dataset.audioPlayerPlayIconValue = this.playIconValue || "/assets/play.svg"
+        audioWrapper.dataset.audioPlayerPauseIconValue = this.pauseIconValue || "/assets/pause.svg"
+        audioWrapper.dataset.audioPlayerVolumeIconValue = this.volumeIconValue || "/assets/volume.svg"
+        audioWrapper.dataset.audioPlayerMuteIconValue = this.muteIconValue || "/assets/mute.svg"
 
         const audio = document.createElement("audio")
-        audio.controls = true
+        audio.dataset.audioPlayerTarget = "audio"
         audio.preload = "metadata"
         audio.src = attachment.url
 
+        const controls = document.createElement("div")
+        controls.classList.add("audio-player-controls")
+
+        const playBtn = document.createElement("button")
+        playBtn.type = "button"
+        playBtn.classList.add("audio-btn")
+        playBtn.dataset.action = "audio-player#toggle"
+        playBtn.dataset.audioPlayerTarget = "playButton"
+
+        const playIcon = document.createElement("img")
+        playIcon.src = this.playIconValue || "/assets/play.svg"
+        playIcon.dataset.audioPlayerTarget = "playIcon"
+        playIcon.alt = "Play"
+        playBtn.appendChild(playIcon)
+
+        const waveform = document.createElement("div")
+        waveform.classList.add("audio-waveform")
+        waveform.dataset.audioPlayerTarget = "waveform"
+
+        const muteBtn = document.createElement("button")
+        muteBtn.type = "button"
+        muteBtn.classList.add("audio-btn", "audio-mute-btn")
+        muteBtn.dataset.action = "audio-player#toggleMute"
+        muteBtn.dataset.audioPlayerTarget = "muteButton"
+
+        const muteIcon = document.createElement("img")
+        muteIcon.src = this.volumeIconValue || "/assets/volume.svg"
+        muteIcon.dataset.audioPlayerTarget = "muteIcon"
+        muteIcon.alt = "Mute"
+        muteBtn.appendChild(muteIcon)
+
+        controls.appendChild(playBtn)
+        controls.appendChild(waveform)
+        controls.appendChild(muteBtn)
+
+        const timeDisplay = document.createElement("div")
+        timeDisplay.classList.add("audio-time")
+        timeDisplay.dataset.audioPlayerTarget = "timeDisplay"
+        timeDisplay.textContent = "0:00"
+
         audioWrapper.appendChild(audio)
+        audioWrapper.appendChild(controls)
+        audioWrapper.appendChild(timeDisplay)
         attachmentsEl.appendChild(audioWrapper)
       } else if (attachment.attachment_type === "image" || (attachment.content_type || "").startsWith("image/")) {
         const wrapper = document.createElement("div")
@@ -300,6 +427,68 @@ export default class extends Controller {
     })
 
     if (attachmentsEl.childElementCount) container.appendChild(attachmentsEl)
+  }
+
+  setupImagePreview() {
+    const list = document.getElementById("messages-list")
+    if (!list) return
+
+    if (this._imagePreviewHandler) {
+      list.removeEventListener("click", this._imagePreviewHandler)
+    }
+
+    this._imagePreviewHandler = (e) => {
+      const img = e.target.closest(".attachment-image")
+      if (!img) return
+      this.openImagePreview(img.src, img.alt)
+    }
+
+    list.addEventListener("click", this._imagePreviewHandler)
+  }
+
+  openImagePreview(src, alt = "") {
+    this.closeImagePreview()
+
+    const overlay = document.createElement("div")
+    overlay.classList.add("msg-image-overlay")
+    overlay.id = "msg-image-overlay"
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) this.closeImagePreview()
+    })
+
+    const img = document.createElement("img")
+    img.src = src
+    img.alt = alt
+    img.classList.add("msg-image-overlay-img")
+
+    const closeBtn = document.createElement("button")
+    closeBtn.classList.add("msg-image-overlay-close")
+    closeBtn.innerHTML = "×"
+    closeBtn.addEventListener("click", () => this.closeImagePreview())
+
+    overlay.appendChild(img)
+    overlay.appendChild(closeBtn)
+    document.body.appendChild(overlay)
+
+    requestAnimationFrame(() => overlay.classList.add("active"))
+
+    this._imagePreviewEscHandler = (e) => {
+      if (e.key === "Escape") this.closeImagePreview()
+    }
+    document.addEventListener("keydown", this._imagePreviewEscHandler)
+  }
+
+  closeImagePreview() {
+    const overlay = document.getElementById("msg-image-overlay")
+    if (overlay) {
+      overlay.classList.remove("active")
+      overlay.addEventListener("transitionend", () => overlay.remove(), { once: true })
+      setTimeout(() => { if (overlay.parentNode) overlay.remove() }, 300)
+    }
+    if (this._imagePreviewEscHandler) {
+      document.removeEventListener("keydown", this._imagePreviewEscHandler)
+      this._imagePreviewEscHandler = null
+    }
   }
 
   scrollToBottom() {

@@ -1,4 +1,30 @@
 = button_to messages_path(conversation_id: conversation.id, format: :turbo_stream), method: :get, class: "conv-item", form: { data: { turbo_stream: true } } do
+  .conv-icon
+    = inline_svg_tag("Group.svg", class: "theme-svg")
   .conv-details
-    .title = conversation.title || "Conversation ##{conversation.identifier.last(4)}"
-    .last-msg = conversation.messages.last&.content&.truncate(40) || t('widget.conversations.no_messages')
+    .conv-details-top
+      .title = conversation.title || "Conversation ##{conversation.identifier.last(4)}"
+      .conv-time
+        - last_msg_time = conversation.messages.last&.created_at || conversation.updated_at
+        - if last_msg_time
+          - if last_msg_time.today?
+            = last_msg_time.strftime("%l:%M %p").strip
+          - elsif last_msg_time.yesterday?
+            = t('widget.conversations.yesterday', default: 'Yesterday')
+          - elsif last_msg_time > 6.days.ago
+            = last_msg_time.strftime("%A")
+          - else
+            = last_msg_time.strftime("%m/%d/%y")
+    - last_message = conversation.messages.order(:created_at).last
+    - if last_message&.content.present?
+      .last-msg = strip_tags(last_message.content.to_s).strip.truncate(40)
+    - elsif last_message&.attachments&.any?
+      - attachment = last_message.attachments.last
+      - if attachment.audio?
+        .last-msg 🎵 #{t('widget.voice_message', default: 'Voice message')}
+      - elsif attachment.image?
+        .last-msg 📷 #{t('widget.photo', default: 'Photo')}
+      - else
+        .last-msg 📎 #{attachment.file.filename.to_s.truncate(30)}
+    - else
+      .last-msg = t('widget.conversations.no_messages')

@@ -1,0 +1,47 @@
+ko:
+  widget:
+    home:
+      title: "새로운 채팅을 시작해보세요"
+      team: "팀!"
+      subheading: "고객과의 연결을 통해 비즈니스 성장을 도와드립니다."
+      start_conversation: "대화 시작하기"
+      reply_time: "일반적인 응답 시간"
+      reply_time_unit: "몇 분"
+    conversations:
+      title: "대화"
+      messages: "메시지"
+      new_conversation: "대화 시작하기"
+      no_conversations: "아직 대화가 없습니다."
+    footer:
+      home: "홈"
+      conversations: "대화"
+      help: "도움말 센터"
+    chat:
+      placeholder: "메시지를 입력하세요..."
+      typing: "입력 중..."
+    editor:
+      placeholder: "메시지를 입력하세요…"
+      emoji: "이모지"
+      attach_file: "파일 첨부"
+      send: "메시지 보내기"
+      emoji_smileys: "😀 스마일"
+      emoji_gestures: "👋 제스처"
+      emoji_hearts: "❤️ 하트"
+      emoji_objects: "🎉 오브젝트"
+    pre_chat:
+      title: "대화 시작하기"
+      subtitle: "의견을 듣고 싶습니다. 시작하려면 정보를 입력해 주세요."
+      name: "이름"
+      name_placeholder: "홍길동"
+      email: "이메일 주소"
+      email_placeholder: "you@example.com"
+      submit: "채팅 시작"
+    help_center:
+      title: "도움말 센터"
+      search_placeholder: "문서 검색..."
+      no_results: "검색 결과가 없습니다."
+  contact_form:
+    success_title: "메시지 전송 완료!"
+    send_message: "메시지 보내기"
+    success: "감사합니다! 메시지가 접수되었습니다."
+    failure: "문제가 발생했습니다. 다시 시도해 주세요."

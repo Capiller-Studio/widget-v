@@ -9,17 +9,32 @@
             .person-img.avatar-placeholder class=avatar_fallback_color_class(agent.display_name || agent.first_name || agent.email)
               = agent.display_name&.first&.upcase || "A"
       .header-text = t('widget.conversations.messages')
+
     - if @customer && @inbox
-      .main.main-gradient.main-content(data-controller="widget" data-widget-connection-token-value=@customer_inbox&.connection_token data-widget-url-value=create_message_path data-widget-avatar-url-value=image_path("human.png"))
+      .main.main-gradient.main-content(
+        data-controller="widget"
+        data-widget-connection-token-value=@customer_inbox&.connection_token
+        data-widget-url-value=create_message_path
+        data-widget-avatar-url-value=image_path("human.png")
+        data-widget-play-icon-value=asset_path("play.svg")
+        data-widget-pause-icon-value=asset_path("pause.svg")
+        data-widget-volume-icon-value=asset_path("volume.svg")
+        data-widget-mute-icon-value=asset_path("mute.svg")
+      )
         .conversation#messages-list
           = render "widget/messages_pager"
+
           - if @messages.any?
-            = render partial: 'widget/message', collection: @messages
+            = render partial: "widget/message", collection: @messages
           - else
             .time = Time.current.strftime("%a %l:%M %p")
+
         .send-msg
-          - editor_i18n = { placeholder: t('widget.editor.placeholder'), emoji: t('widget.editor.emoji'), attach_file: t('widget.editor.attach_file'), send: t('widget.editor.send'), emoji_smileys: t('widget.editor.emoji_smileys'), emoji_gestures: t('widget.editor.emoji_gestures'), emoji_hearts: t('widget.editor.emoji_hearts'), emoji_objects: t('widget.editor.emoji_objects') }
+          - editor_i18n = { placeholder: t("widget.editor.placeholder"), emoji: t("widget.editor.emoji"), attach_file: t("widget.editor.attach_file"), send: t("widget.editor.send"), emoji_smileys: t("widget.editor.emoji_smileys"), emoji_gestures: t("widget.editor.emoji_gestures"), emoji_hearts: t("widget.editor.emoji_hearts"), emoji_objects: t("widget.editor.emoji_objects") }
+
           .de-container(data-editor-i18n=editor_i18n.to_json)
+
     - else
       = render "widget/pre_chat_form"
+
     = render("footer", active: { message: "active" })

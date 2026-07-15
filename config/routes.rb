@@ -14,7 +14,7 @@ Rails.application.routes.draw do
   get "w/:account_id/:widget_id/embed.js", to: "embed#show", as: :embed_script, defaults: { format: :js }
   get "f/:account_id/:form_id/embed.js", to: "embed#show_form", as: :embed_form_script, defaults: { format: :js }
 
-  scope "(:locale)", locale: /[a-z]{2}/ do
+  scope "(:locale)", locale: /[a-z]{2}(-[A-Z]{2})?/ do
     get "home",           to: "widget#home",           as: :home
     get "messages",       to: "widget#messages",       as: :messages
     post "messages",      to: "widget#create_message", as: :create_message

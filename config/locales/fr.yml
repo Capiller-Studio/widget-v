@@ -1,0 +1,47 @@
+fr:
+  widget:
+    home:
+      title: "Nouvelle discussion avec"
+      team: "notre équipe !"
+      subheading: "Nous aidons votre entreprise à grandir."
+      start_conversation: "Démarrer"
+      reply_time: "Réponse habituelle"
+      reply_time_unit: "Quelques minutes"
+    conversations:
+      title: "Conversations"
+      messages: "Messages"
+      new_conversation: "Nouvelle"
+      no_conversations: "Aucune conversation."
+    footer:
+      home: "Accueil"
+      conversations: "Chats"
+      help: "Aide"
+    chat:
+      placeholder: "Écrire..."
+      typing: "écrit..."
+    editor:
+      placeholder: "Écrire un message…"
+      emoji: "Emoji"
+      attach_file: "Joindre"
+      send: "Envoyer"
+      emoji_smileys: "😀 Sourires"
+      emoji_gestures: "👋 Gestes"
+      emoji_hearts: "❤️ Cœurs"
+      emoji_objects: "🎉 Objets"
+    pre_chat:
+      title: "Démarrer"
+      subtitle: "Partagez vos infos pour commencer."
+      name: "Nom"
+      name_placeholder: "Jean Dupont"
+      email: "E-mail"
+      email_placeholder: "vous@exemple.com"
+      submit: "Commencer"
+    help_center:
+      title: "Aide"
+      search_placeholder: "Rechercher..."
+      no_results: "Aucun résultat."
+  contact_form:
+    success_title: "Message envoyé !"
+    send_message: "Envoyer"
+    success: "Merci ! Message reçu."
+    failure: "Erreur. Réessayez."

@@ -29,7 +29,7 @@
 
   // --- Dimensions ---
   var BUBBLE_SIZE    = "60px";
-  var WIDGET_WIDTH   = "400px";
+  var WIDGET_WIDTH   = "340px";
   var WIDGET_HEIGHT  = "600px";
 
   // --- Create bubble ---
@@ -56,7 +56,7 @@
   // --- Container (hidden, no iframe yet) ---
   var container = document.createElement("div");
   container.id = "deskbolic-widget-container";
-  container.style.cssText = "position:fixed;bottom:90px;" + position + ":20px;width:" + WIDGET_WIDTH + ";height:" + WIDGET_HEIGHT + ";max-height:calc(100vh - 120px);border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.15);z-index:2147483647;display:none;opacity:0;transform:translateY(10px);transition:opacity 0.3s ease,transform 0.3s ease;";
+  container.style.cssText = "position:fixed;bottom:90px;" + position + ":20px;width:" + WIDGET_WIDTH + ";height:" + WIDGET_HEIGHT + ";max-height:calc(100vh - 93px);border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.15);z-index:2147483647;display:none;opacity:0;transform:translateY(10px);transition:opacity 0.3s ease,transform 0.3s ease;";
 
   // --- Iframe (created WITHOUT src for zero performance impact) ---
   var iframe = document.createElement("iframe");

@@ -1,0 +1,47 @@
+es:
+  widget:
+    home:
+      title: "Nuevo chat con nuestro"
+      team: "equipo!"
+      subheading: "Ayudamos a tu negocio a crecer conectándote con clientes."
+      start_conversation: "Iniciar chat"
+      reply_time: "Tiempo de respuesta"
+      reply_time_unit: "Unos minutos"
+    conversations:
+      title: "Conversaciones"
+      messages: "Mensajes"
+      new_conversation: "Nuevo chat"
+      no_conversations: "Sin conversaciones."
+    footer:
+      home: "Inicio"
+      conversations: "Chats"
+      help: "Ayuda"
+    chat:
+      placeholder: "Escribe..."
+      typing: "escribiendo..."
+    editor:
+      placeholder: "Escribe un mensaje…"
+      emoji: "Emoji"
+      attach_file: "Adjuntar"
+      send: "Enviar"
+      emoji_smileys: "😀 Sonrisas"
+      emoji_gestures: "👋 Gestos"
+      emoji_hearts: "❤️ Corazones"
+      emoji_objects: "🎉 Objetos"
+    pre_chat:
+      title: "Iniciar chat"
+      subtitle: "Comparte tus datos para comenzar."
+      name: "Nombre"
+      name_placeholder: "María García"
+      email: "Correo"
+      email_placeholder: "tu@ejemplo.com"
+      submit: "Comenzar"
+    help_center:
+      title: "Ayuda"
+      search_placeholder: "Buscar..."
+      no_results: "Sin resultados."
+  contact_form:
+    success_title: "Mensaje enviado!"
+    send_message: "Enviar"
+    success: "Gracias! Mensaje recibido."
+    failure: "Error. Inténtalo de nuevo."
