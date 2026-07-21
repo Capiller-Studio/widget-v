@@ -79,7 +79,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_15_000002) do
     t.string "currency", limit: 4, default: "USD", null: false
     t.jsonb "data", default: {}, null: false
     t.string "email"
-    t.bigint "features", default: 0, null: false
     t.string "identifier", null: false
     t.jsonb "limits", default: {}, null: false
     t.string "locale", default: "en", null: false
@@ -93,6 +92,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_15_000002) do
     t.uuid "referred_by_id"
     t.string "shard_key", default: "de", null: false
     t.integer "status", default: 0, null: false
+    t.string "timezone", default: "UTC", null: false
     t.datetime "updated_at", default: -> { "CURRENT_TIMESTAMP" }, null: false
     t.index ["created_at"], name: "index_accounts_on_created_at"
     t.index ["identifier"], name: "index_accounts_on_identifier", unique: true
@@ -356,9 +356,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_15_000002) do
   create_table "plans", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.decimal "annual_price", precision: 10, scale: 2, default: "0.0", null: false
     t.decimal "base_price", precision: 10, scale: 2, default: "0.0", null: false
-    t.jsonb "configurations", default: {}, null: false
     t.datetime "created_at", default: -> { "CURRENT_TIMESTAMP" }, null: false
     t.string "currency", limit: 4, default: "USD", null: false
+    t.jsonb "features", default: {}, null: false
     t.jsonb "limits", default: {}, null: false
     t.string "name", null: false
     t.integer "position", default: 0, null: false
