@@ -1,8 +1,9 @@
 .chat-screen
   .chat-header
-    h3 = @form.name
-    - if @form.configurations["welcome_message"].present?
-      p.welcome-text = @form.configurations["welcome_message"]
+    h3 = @form.title.presence || @form.name
+    - welcome_text = @form.subtitle.presence || @form.configurations["welcome_message"]
+    - if welcome_text.present?
+      p.welcome-text = welcome_text
 
   .chat-box
     .messages-container
@@ -15,8 +16,9 @@
           p = flash[:alert]
       = form_with url: contact_form_submit_path(account_id: @account.id, form_id: @form.id, locale: I18n.locale), method: :post, multipart: true, class: "contact-form", data: { turbo: false } do |f|
         / Honeypot field
-        .honeypot
-          = text_field_tag :nickname
+        - if @form.spam_protection_enabled?
+          .honeypot
+            = text_field_tag :nickname
         
         - if @form.require_login?
           = hidden_field_tag :identifier, params[:identifier]
@@ -53,5 +55,13 @@
               - options = field.localized_options(I18n.locale).map { |o| [o["label"], o["value"]] }
               = select_tag field.key, options_for_select(options), include_blank: "Select...", required: field.required?, class: "form-control"
 
+        - if @form.allow_attachments?
+          .form-group.attachment-form-group
+            label for="attachments"
+              = I18n.t("contact_form.attachments", default: "Attachments")
+            = file_field_tag "attachments[]", id: "attachments", multiple: true, class: "form-control attachment-control", accept: "image/*,video/*,audio/*,.pdf,.doc,.docx,.txt,.zip"
+
         .form-actions
-          = f.submit "Submit Request", class: "btn-submit", style: "background: #{@form.configurations['primary_color'] || '#10B981'};"
+          - submit_text = @form.submit_button_text.presence || I18n.t("contact_form.send_message", default: "Submit Request")
+          - submit_color = @form.theme_color.presence || @form.ui_configurations&.dig("theme_color") || @form.configurations["primary_color"] || "#10B981"
+          = f.submit submit_text, class: "btn-submit", style: "background: #{submit_color};"

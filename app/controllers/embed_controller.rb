@@ -30,7 +30,7 @@ class EmbedController < ApplicationController
     @form_id    = params[:form_id]
 
     form = Channel::ContactForm.find_by(account_id: @account_id, id: @form_id)
-    @theme_color = form&.configurations&.dig("primary_color") || "#778DFF"
+    @theme_color = form&.theme_color || form&.ui_configurations&.dig("theme_color") || form&.configurations&.dig("primary_color") || "#778DFF"
 
     response.headers["Content-Type"] = "application/javascript"
     response.headers["Cache-Control"] = "public, max-age=3600, s-maxage=86400"

@@ -18,28 +18,31 @@ class ContactFormsController < ApplicationController
   end
 
   def create
-    if params[:nickname].present?
-      render plain: "Spam detected.", status: :ok
+    if @form.spam_protection_enabled? && params[:nickname].present?
+      redirect_to contact_form_redirect_path, alert: I18n.t("contact_form.failure", default: "Something went wrong. Please try again.")
       return
     end
+
     form_params = params.except(:action, :controller, :account_id, :form_id, :locale, :signature, :identifier, :attachments, :nickname).to_unsafe_h
+    attachments = @form.allow_attachments? ? Array(params[:attachments]).reject(&:blank?) : []
+
     conversation = Channels::ContactForms::ConversationCreator.call(
       contact_form_channel: @form,
       form_params: form_params,
-      attachments: params[:attachments]
+      attachments: attachments
     )
 
     if conversation
-      if @form.configurations["submit_redirect_url"].present?
-        redirect_to @form.configurations["submit_redirect_url"], allow_other_host: true
-      else
-        success_message = I18n.t(@form.configurations["success_message_i18n_key"] || "contact_form.success", default: "Thank you! Your message has been received.")
-        redirect_to contact_form_entry_path, notice: success_message
-      end
+      success_message = @form.success_message.presence || I18n.t(@form.configurations["success_message_i18n_key"] || "contact_form.success", default: "Thank you! Your message has been received.")
+      redirect_to contact_form_redirect_path, notice: success_message
     else
       failure_message = I18n.t("contact_form.failure", default: "Something went wrong. Please try again.")
-      redirect_to contact_form_entry_path, alert: failure_message
+      redirect_to contact_form_redirect_path, alert: failure_message
     end
+  rescue StandardError => e
+    Rails.logger.error("Contact form submission failed: #{e.class}: #{e.message}")
+    failure_message = I18n.t("contact_form.failure", default: "Something went wrong. Please try again.")
+    redirect_to contact_form_redirect_path, alert: failure_message
   end
 
   private
@@ -50,7 +53,19 @@ class ContactFormsController < ApplicationController
 
   def set_form
     @account = Account.find(params[:account_id])
-    @form = Channel::ContactForm.find_by!(account: @account, id: params[:form_id])
+    @form = Channel::ContactForm.includes(:translations).find_by!(account: @account, id: params[:form_id])
+  end
+
+  def contact_form_redirect_path
+    contact_form_entry_path(
+      account_id: @account.id,
+      form_id: @form.id,
+      locale: I18n.locale,
+      identifier: params[:identifier].presence,
+      signature: params[:signature].presence,
+      email: params[:email].presence,
+      name: params[:name].presence
+    )
   end
 
   def verify_hmac

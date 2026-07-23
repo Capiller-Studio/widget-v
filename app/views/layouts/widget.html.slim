@@ -17,7 +17,7 @@ html
     = javascript_include_tag "application", "data-turbo-track": "reload", type: "module"
 
     / Dynamic theme from widget or form configurations
-    - theme_color = @widget&.theme_color || @form&.configurations&.dig("primary_color")
+    - theme_color = @widget&.theme_color || @form&.theme_color || @form&.ui_configurations&.dig("theme_color") || @form&.configurations&.dig("primary_color")
     - if theme_color.present?
       css:
         :root {
@@ -50,7 +50,20 @@ html
         max-width: 100% !important;
       }
 
-  body data-controller="live-preview"
+      body.contact-form-embed {
+        overflow: auto;
+      }
+      body.contact-form-embed #deskbolic-widget,
+      body.contact-form-embed #deskbolic-widget .chat-screen,
+      body.contact-form-embed #deskbolic-widget .chat-box {
+        height: auto !important;
+        min-height: 0 !important;
+      }
+      body.contact-form-embed #deskbolic-widget .chat-box {
+        overflow: visible !important;
+      }
+
+  body class=(@form.present? ? "contact-form-embed" : nil) data-controller="live-preview"
     #deskbolic-widget
       = yield
 
@@ -64,3 +77,34 @@ html
       .powered-by
         a href="https://deskbolic.com" target="_blank" rel="noopener"
           | Powered by Deskbolic
+
+    - if @form.present?
+      javascript:
+        (function() {
+          function measureContactForm() {
+            var height = Math.max(
+              document.body.scrollHeight,
+              document.documentElement.scrollHeight,
+              document.body.offsetHeight,
+              document.documentElement.offsetHeight
+            );
+
+            window.parent.postMessage({
+              type: "deskbolic:contact-form:resize",
+              height: height
+            }, "*");
+          }
+
+          window.addEventListener("load", measureContactForm);
+          window.addEventListener("resize", measureContactForm);
+          window.addEventListener("message", function(event) {
+            if (!event.data || event.data.type !== "deskbolic:contact-form:measure") return;
+            measureContactForm();
+          });
+
+          if ("ResizeObserver" in window) {
+            new ResizeObserver(measureContactForm).observe(document.body);
+          }
+
+          requestAnimationFrame(measureContactForm);
+        })();

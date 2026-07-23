@@ -20,6 +20,15 @@
   overflow-y: auto;
 }
 
+body.contact-form-embed #deskbolic-widget .chat-screen .chat-box .messages-container {
+  overflow: visible;
+}
+
+body.contact-form-embed #deskbolic-widget .chat-screen .chat-box .contact-form {
+  display: flex;
+  flex-direction: column;
+}
+
 #deskbolic-widget .chat-screen .chat-box .contact-form .form-group {
   margin-bottom: 15px;
 }
