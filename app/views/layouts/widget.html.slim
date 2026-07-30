@@ -64,6 +64,18 @@ html
       }
 
   body class=(@form.present? ? "contact-form-embed" : nil) data-controller="live-preview"
+    - widget_customer_storage_key = @account && @widget ? "deskbolic:customer:#{@account.id}:#{@widget.id}" : nil
+    - if widget_customer_storage_key.present? && @customer
+      javascript:
+        (function() {
+          try {
+            window.localStorage.setItem(#{widget_customer_storage_key.to_json.html_safe}, #{@customer.id.to_json.html_safe});
+          } catch (error) {}
+          if (window.parent !== window) {
+            window.parent.postMessage({ type: "deskbolic:customer", customer_id: #{@customer.id.to_json.html_safe} }, "*");
+          }
+        })();
+
     #deskbolic-widget
       = yield
 

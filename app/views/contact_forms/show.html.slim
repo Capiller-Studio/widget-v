@@ -32,9 +32,8 @@
 
         - @custom_fields.each do |field|
           .form-group
-            - translation = field.translations.detect { |t| t.locale.to_s == I18n.locale.to_s } || field.translations.detect { |t| t.locale.to_s == "en" }
-            - label_text = translation&.label || field.key.titleize
-            - placeholder_text = translation&.placeholder
+            - label_text = field.label.presence || field.key.titleize
+            - placeholder_text = field.placeholder
 
             label for=field.key
               = label_text

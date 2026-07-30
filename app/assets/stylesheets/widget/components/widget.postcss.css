@@ -191,6 +191,24 @@
           }
         }
 
+        &.pre-chat-main {
+          justify-content: flex-start;
+          overflow-y: auto;
+          min-height: 0;
+          padding: 0 14px 18px;
+          scrollbar-width: thin;
+
+          &::-webkit-scrollbar {
+            display: block;
+            width: 6px;
+          }
+
+          &::-webkit-scrollbar-thumb {
+            background: rgba(15, 23, 42, 0.18);
+            border-radius: 999px;
+          }
+        }
+
         .empty-state {
           display: flex;
           align-items: center;
@@ -419,21 +437,24 @@
 
         /* Pre-chat form styles */
         .pre-chat-form {
-          padding: 24px 20px;
+          width: 100%;
+          box-sizing: border-box;
+          padding: 22px 6px 28px;
           display: flex;
           flex-direction: column;
-          flex: 1;
+          flex: 0 0 auto;
           .pre-chat-subtitle {
             font-family: $font-family-inter-regular;
             font-size: 14px;
             color: #64748b;
-            margin-bottom: 20px;
+            margin: 0 0 18px;
             line-height: 1.5;
           }
           .pre-chat-fields {
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 15px;
+            padding-bottom: 6px;
             .field-group {
               display: flex;
               flex-direction: column;
@@ -442,24 +463,46 @@
                 font-family: $font-family-inter-medium;
                 font-size: 13px;
                 color: #334155;
+                line-height: 1.35;
+                .required {
+                  color: #ef4444;
+                  margin-left: 3px;
+                }
               }
-              input {
+              input,
+              select,
+              textarea {
+                width: 100%;
+                box-sizing: border-box;
                 font-family: $font-family-inter-regular;
                 font-size: 14px;
                 padding: 12px 16px;
                 border: 2px solid rgba(0, 0, 0, 0.08);
                 border-radius: 12px;
                 background: #fff;
+                color: #1e293b;
                 transition: border-color 0.2s;
+                outline: none;
                 &:focus {
-                  outline: none;
                   border-color: var(--widget-primary-color, #778DFF);
                 }
+              }
+              input::placeholder,
+              textarea::placeholder {
+                color: #94a3b8;
+              }
+              select {
+                appearance: auto;
+              }
+              textarea {
+                min-height: 96px;
+                resize: vertical;
               }
             }
             .start-conv-btn {
               margin-top: 8px;
               padding: 14px 24px;
+              min-height: 48px;
               font-family: $font-family-jakarta-semibold;
               font-size: 15px;
               display: flex;

@@ -4,6 +4,7 @@
   var WIDGET_HOST = "<%= request.base_url %>";
   var ACCOUNT_ID  = "<%= @account_id %>";
   var WIDGET_ID   = "<%= @widget_id %>";
+  var CUSTOMER_STORAGE_KEY = "deskbolic:customer:" + ACCOUNT_ID + ":" + WIDGET_ID;
 
   // Read configuration from the script tag's data attributes
   var scriptTag = document.currentScript;
@@ -15,10 +16,20 @@
   var position   = scriptTag.getAttribute("data-position") || "right";
   var themeColor = scriptTag.getAttribute("data-color") || "<%= @theme_color || '#778DFF' %>";
 
+  function storedCustomerId() {
+    try {
+      return window.localStorage.getItem(CUSTOMER_STORAGE_KEY) || "";
+    } catch (error) {
+      return "";
+    }
+  }
+
   // Build the iframe src (NOT set until first open)
   function buildSrc() {
     var src = WIDGET_HOST + "/" + locale + "/w/" + ACCOUNT_ID + "/" + WIDGET_ID;
     var params = [];
+    var customerId = storedCustomerId();
+    if (customerId) params.push("customer_id=" + encodeURIComponent(customerId));
     if (identifier) params.push("identifier=" + encodeURIComponent(identifier));
     if (signature)  params.push("signature=" + encodeURIComponent(signature));
     if (email)      params.push("email=" + encodeURIComponent(email));
@@ -137,6 +148,10 @@
           badge.style.display = "flex";
         }
       }
+    } else if (data.type === "deskbolic:customer" && data.customer_id) {
+      try {
+        window.localStorage.setItem(CUSTOMER_STORAGE_KEY, data.customer_id);
+      } catch (error) {}
     } else if (data.type === "deskbolic:close") {
       closeWidget();
     }

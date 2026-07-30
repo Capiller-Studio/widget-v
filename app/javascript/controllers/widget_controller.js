@@ -6,6 +6,9 @@ export default class extends Controller {
   static targets = ["editorContainer"]
   static values = {
     connectionToken: String,
+    accountId: String,
+    widgetId: String,
+    customerId: String,
     url: String,
     avatarUrl: String,
     cableUrl: String,
@@ -17,6 +20,8 @@ export default class extends Controller {
 
   connect() {
     console.log("[Deskbolic] Widget Stimulus controller connected!")
+
+    this.persistCustomerId()
 
     // Initialize Lexical editor if container exists
     const editorContainer = this.element.querySelector('.de-container')
@@ -515,6 +520,17 @@ export default class extends Controller {
   }
 
   // --- Communication with parent frame ---
+  persistCustomerId() {
+    if (!this.accountIdValue || !this.widgetIdValue || !this.customerIdValue) return
+
+    const storageKey = `deskbolic:customer:${this.accountIdValue}:${this.widgetIdValue}`
+    try {
+      window.localStorage.setItem(storageKey, this.customerIdValue)
+    } catch (error) {}
+
+    this.notifyParent("deskbolic:customer", { customer_id: this.customerIdValue })
+  }
+
   notifyParent(type, data) {
     if (window.parent !== window) {
       window.parent.postMessage(Object.assign({ type: type }, data), "*")
