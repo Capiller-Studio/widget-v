@@ -4,6 +4,7 @@ class WidgetController < ApplicationController
   layout "widget"
 
   before_action :set_widget
+  around_action :set_sharding_context
   before_action :set_frame_ancestors
   before_action :identify_customer
   before_action :set_locale
@@ -22,18 +23,26 @@ class WidgetController < ApplicationController
   def messages
     if !@customer && !@widget.pre_chat_form_enabled?
       if @widget.anonymous_allowed?
-        external_id = "anon-#{SecureRandom.hex(8)}"
+        external_id = widget_customer_identifier || "anon-#{SecureRandom.hex(8)}"
         @customer = Customers::CustomerCreator.call(
           account: @account,
           inbox: @inbox,
           external_id: external_id
         )
         @customer_inbox = @customer&.customer_inboxes&.find_by(inbox: @inbox)
-        session[:customer_id] = @customer.id
-        session[:customer_external_id] = @customer_inbox&.external_id
+        store_customer_in_session
       else
         return render plain: "Anonymous chat is disabled.", status: :unauthorized
       end
+    end
+
+    if !@customer && @widget.pre_chat_form_enabled?
+      respond_to do |format|
+        format.turbo_stream do
+          render(turbo_stream: turbo_stream.update("widget", partial: "widget/pre_chat_form"))
+        end
+      end
+      return
     end
 
     find_or_set_conversation
@@ -147,8 +156,6 @@ class WidgetController < ApplicationController
   end
 
   def create_customer
-    external_id = "anon-#{SecureRandom.hex(8)}"
-    
     customer_data = {
       email: params[:email],
       name: params[:name],
@@ -181,6 +188,8 @@ class WidgetController < ApplicationController
       end
     end
 
+    external_id = widget_customer_identifier || customer_data[:email].presence || "anon-#{SecureRandom.hex(8)}"
+
     @customer = Customers::CustomerCreator.call(
       account: @account,
       inbox: @inbox,
@@ -200,8 +209,7 @@ class WidgetController < ApplicationController
       @customer.save
     end
 
-    session[:customer_id] = @customer.id
-    session[:customer_external_id] = @customer_inbox&.external_id
+    store_customer_in_session
     
     session[:pre_chat_conversation_data] = conversation_data
 
@@ -231,9 +239,19 @@ class WidgetController < ApplicationController
 
   private
 
+  def set_sharding_context(&block)
+    @account ||= Account.find_by(id: widget_account_id)
+
+    if @account
+      @account.with_shard(&block)
+    else
+      yield
+    end
+  end
+
   def set_widget
-    @account = Account.find(params[:account_id] || session[:account_id])
-    @widget = Channel::WebWidget.includes(:primary_inbox).find_by!(account: @account, id: params[:widget_id] || session[:widget_id])
+    @account ||= Account.find(widget_account_id)
+    @widget = Channel::WebWidget.includes(:primary_inbox).find_by!(account: @account, id: widget_id)
     @inbox = @widget.primary_inbox
 
     if @widget&.primary_inbox&.business_hour_group_id.present?
@@ -280,33 +298,32 @@ class WidgetController < ApplicationController
   end
 
   def identify_customer
-    # 1. Restore from session
-    if session[:customer_id].present? && session[:widget_id] == @widget.id
-      @customer = Customer.find_by(id: session[:customer_id])
-      @customer_inbox = @customer&.customer_inboxes&.find_by(inbox: @inbox)
-    end
-
+    restore_customer
     return if @customer
 
     if @widget.secure_identity_enforced? && params[:identifier].blank?
       return render json: { error: "HMAC Identity is required" }, status: :unauthorized
     end
 
-    # 2. HMAC identification (optional unless enforced)
-    return unless params[:identifier].present?
+    if params[:identifier].present?
+      unless Channels::WebWidgets::IdentityVerifier.call(
+        widget: @widget,
+        identifier: params[:identifier],
+        signature: params[:signature]
+      )
+        return render json: { error: "Invalid signature" }, status: :unauthorized
+      end
 
-    unless Channels::WebWidgets::IdentityVerifier.call(
-      widget: @widget,
-      identifier: params[:identifier],
-      signature: params[:signature]
-    )
-      return render json: { error: "Invalid signature" }, status: :unauthorized
+      create_or_restore_customer(params[:identifier])
+      return
     end
+  end
 
+  def create_or_restore_customer(external_id)
     @customer = Customers::CustomerCreator.call(
       account: @account,
       inbox: @inbox,
-      external_id: params[:identifier],
+      external_id: external_id,
       email: params[:email],
       params: {
         name: params[:name],
@@ -317,8 +334,8 @@ class WidgetController < ApplicationController
     )
 
     @customer_inbox = @customer&.customer_inboxes&.find_by(inbox: @inbox)
-    session[:customer_id] = @customer.id
-    session[:customer_external_id] = @customer_inbox&.external_id
+    store_customer_in_session
+    @customer
   end
 
   def find_or_set_conversation
@@ -333,7 +350,7 @@ class WidgetController < ApplicationController
 
   def customer_contact_params
     {
-      external_id: @customer_inbox&.external_id || session[:customer_external_id] || params[:identifier] || @customer&.external_id,
+      external_id: @customer_inbox&.external_id || widget_customer_identifier || session[:customer_external_id] || @customer&.external_id,
       email: @customer&.email || params[:email],
       name: @customer&.name || params[:name],
       first_name: @customer&.first_name || params[:first_name],
@@ -346,7 +363,41 @@ class WidgetController < ApplicationController
     I18n.locale = params[:locale] || @widget.default_locale || I18n.default_locale
   end
 
+  def restore_customer
+    customer_id = params[:customer_id].presence
+    customer_id ||= session[:customer_id] if session[:widget_id] == @widget.id
+    return unless customer_id.present?
+
+    @customer = @account.customers.joins(:customer_inboxes).find_by(id: customer_id, customer_inboxes: { inbox_id: @inbox.id })
+    @customer_inbox = @customer&.customer_inboxes&.find_by(inbox: @inbox)
+  end
+
+  def store_customer_in_session
+    return unless @customer
+
+    session[:customer_id] = @customer.id
+    session[:customer_external_id] = @customer_inbox&.external_id
+  end
+
+  def widget_customer_identifier
+    params[:identifier].presence || @customer&.external_id
+  end
+
+  def widget_account_id
+    params[:account_id].presence || session[:account_id]
+  end
+
+  def widget_id
+    params[:widget_id].presence || session[:widget_id]
+  end
+
   def default_url_options
-    { locale: I18n.locale }
+    options = { locale: I18n.locale }
+
+    options[:account_id] = @account.id if @account
+    options[:widget_id] = @widget.id if @widget
+    options[:customer_id] = @customer.id if @customer
+
+    options
   end
 end
