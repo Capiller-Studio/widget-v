@@ -6,7 +6,7 @@
     .main.main-gradient.main-content.pre-chat-main
       .pre-chat-form
         p.pre-chat-subtitle = pre_chat_form&.subtitle.presence || @widget&.pre_chat_subtitle.presence || t("widget.pre_chat.subtitle")
-        = form_tag create_customer_path, method: :post, data: { turbo_stream: true }, class: "pre-chat-fields" do
+        = form_tag widget_create_customer_path(widget_route_params), method: :post, data: { turbo_stream: true }, class: "pre-chat-fields" do
           - if @widget&.pre_chat_form&.custom_fields&.any?
             - @widget.pre_chat_form.custom_fields.order(:position).each do |field|
               - label_text = field.label.presence || field.key.titleize

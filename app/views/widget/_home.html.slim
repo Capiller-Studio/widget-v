@@ -26,7 +26,7 @@
           .sub-heading
             .reply-time style="margin-left: 0; padding-left: 0; border: none;"
               = t('widget.home.offline_subheading', default: "Leave a message and we'll get back to you soon.")
-          = button_to messages_path(format: :turbo_stream), method: :get, class: "start-conv-btn", form: { data: { turbo_stream: true } } do
+          = button_to widget_messages_path(widget_route_params(format: :turbo_stream)), method: :get, class: "start-conv-btn", form: { data: { turbo_stream: true } } do
             p = t('widget.home.leave_message', default: "Leave a Message")
             = inline_svg_tag("send.svg")
         - else
@@ -44,7 +44,7 @@
               .time
                 = inline_svg_tag("message.svg", class: "theme-svg")
                 = t('widget.home.reply_time_unit')
-          = button_to messages_path(format: :turbo_stream), method: :get, class: "start-conv-btn", form: { data: { turbo_stream: true } } do
+          = button_to widget_messages_path(widget_route_params(format: :turbo_stream)), method: :get, class: "start-conv-btn", form: { data: { turbo_stream: true } } do
             p = t('widget.home.start_conversation')
             = inline_svg_tag("send.svg")
     = render("footer", active: { home: "active" })

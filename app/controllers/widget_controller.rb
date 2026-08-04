@@ -233,7 +233,7 @@ class WidgetController < ApplicationController
       format.turbo_stream do
         render(turbo_stream: turbo_stream.update("widget", partial: "widget/messages"))
       end
-      format.html { redirect_to messages_path }
+      format.html { redirect_to widget_messages_path(account_id: @account.id, widget_id: @widget.id, customer_id: @customer&.id, locale: I18n.locale) }
     end
   end
 

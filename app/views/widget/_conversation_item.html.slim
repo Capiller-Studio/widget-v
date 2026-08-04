@@ -1,4 +1,4 @@
-= button_to messages_path(conversation_id: conversation.id, format: :turbo_stream), method: :get, class: "conv-item", form: { data: { turbo_stream: true } } do
+= button_to widget_messages_path(widget_route_params(conversation_id: conversation.id, format: :turbo_stream)), method: :get, class: "conv-item", form: { data: { turbo_stream: true } } do
   .conv-icon
     = inline_svg_tag("Group.svg", class: "theme-svg")
   .conv-details
