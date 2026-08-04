@@ -1,4 +1,4 @@
-= turbo_frame_tag "conversations_pager", src: (@pagy.next ? conversations_path(page: @pagy.next, format: :turbo_stream) : nil), loading: :lazy do
+= turbo_frame_tag "conversations_pager", src: (@pagy.next ? widget_conversations_path(widget_route_params(page: @pagy.next, format: :turbo_stream)) : nil), loading: :lazy do
   - if @pagy.next
     .empty-state
       p = t('widget.conversations.loading_more', default: 'Loading more...')

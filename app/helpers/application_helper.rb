@@ -1,6 +1,15 @@
 # frozen_string_literal: true
 
 module ApplicationHelper
+  def widget_route_params(overrides = {})
+    {
+      account_id: @account&.id || params[:account_id],
+      widget_id: @widget&.id || params[:widget_id],
+      customer_id: @customer&.id || params[:customer_id],
+      locale: I18n.locale
+    }.compact.merge(overrides)
+  end
+
   def single_emoji_message?(content)
     text = strip_tags(content).to_s.strip
     return false if text.blank?

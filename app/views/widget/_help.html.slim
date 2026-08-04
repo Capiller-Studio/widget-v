@@ -5,7 +5,7 @@
     .main.main-gradient
       .help-section data-controller="widget"
         .search-bar
-          input type="text" name="q" placeholder=t('widget.help_center.search_placeholder') data-action="input->widget#search" data-url=search_path
+          input type="text" name="q" placeholder=t('widget.help_center.search_placeholder') data-action="input->widget#search" data-url=widget_search_path(widget_route_params)
         #help-results
           - if @categories.any?
             .articles-col#categories-list
