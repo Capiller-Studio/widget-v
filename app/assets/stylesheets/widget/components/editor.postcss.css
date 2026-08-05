@@ -120,12 +120,34 @@
       transform: scale(0.95);
     }
 
+    &:disabled {
+      cursor: wait;
+      opacity: 0.7;
+      transform: none;
+    }
+
     svg {
       width: 18px;
       height: 18px;
       color: #fff;
       stroke: #fff;
     }
+  }
+
+  &.is-submitting {
+    .de-send-btn svg {
+      animation: de-send-pulse 0.8s ease-in-out infinite;
+    }
+
+    .de-toolbar-btn {
+      cursor: wait;
+      opacity: 0.55;
+    }
+  }
+
+  @keyframes de-send-pulse {
+    0%, 100% { transform: translateX(0); opacity: 0.65; }
+    50% { transform: translateX(2px); opacity: 1; }
   }
 
   /* --- Emoji Picker --- */

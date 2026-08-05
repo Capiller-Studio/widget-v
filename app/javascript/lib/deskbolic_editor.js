@@ -250,16 +250,35 @@ export class DeskbolicEditor {
     }, 4000)
   }
 
-  _handleSubmit() {
+  _setSubmitting(isSubmitting) {
+    this._isSubmitting = isSubmitting
+    this.container.classList.toggle('is-submitting', isSubmitting)
+    this.sendBtn.disabled = isSubmitting
+    this.emojiBtn.disabled = isSubmitting
+    this.fileBtn.disabled = isSubmitting
+    this.voiceBtn.disabled = isSubmitting
+  }
+
+  async _handleSubmit() {
+    if (this._isSubmitting) return
+
     const text = this.getTextContent()
     if (!text && (!this._selectedFiles || this._selectedFiles.length === 0)) return
 
-    if (this.onSubmit) {
-      this.onSubmit(text, this._selectedFiles || [])
-    }
-
+    const files = this._selectedFiles || []
+    this._setSubmitting(true)
     this.clear()
     this._clearFiles()
+
+    try {
+      if (this.onSubmit) {
+        await this.onSubmit(text, files)
+      }
+    } catch (error) {
+      this._showError('Message failed to send. Please try again.')
+    } finally {
+      this._setSubmitting(false)
+    }
   }
 
   _handleFileSelect() {
