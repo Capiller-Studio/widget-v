@@ -220,6 +220,20 @@
           text-align: center;
           padding: 32px;
         }
+
+        .widget-inline-error {
+          color: #b00020;
+          font-family: $font-family-inter-regular;
+          font-size: 12px;
+          padding: 8px 12px;
+          text-align: center;
+        }
+
+        .help-section.is-searching {
+          opacity: 0.72;
+          pointer-events: none;
+        }
+
         .conversation {
           font-family: $font-family-inter-regular;
           font-size: 14px;
@@ -564,6 +578,7 @@
             width: 100%;
             background: #778DFF;
             color: #F8F8F8;
+            cursor: pointer;
           }
         }
 
@@ -691,6 +706,7 @@
           display: flex;
           background: none;
           border: none;
+          cursor: pointer;
           align-items: center;
           flex-direction: column;
           gap: 7px;
@@ -719,6 +735,39 @@
       }
     }
   }
+}
+
+.widget-loading-indicator {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.86);
+  border-radius: 999px;
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.14);
+  display: none;
+  height: 44px;
+  justify-content: center;
+  left: 50%;
+  position: fixed;
+  top: 18px;
+  transform: translateX(-50%);
+  width: 44px;
+  z-index: 10000;
+}
+
+.widget-loading-indicator.is-active {
+  display: flex;
+}
+
+.widget-loading-spinner {
+  animation: widget-loading-spin 0.8s linear infinite;
+  border: 3px solid rgba(15, 23, 42, 0.16);
+  border-top-color: var(--widget-primary-color, #778DFF);
+  border-radius: 50%;
+  height: 22px;
+  width: 22px;
+}
+
+@keyframes widget-loading-spin {
+  to { transform: rotate(360deg); }
 }
 
 .msg-image-overlay {

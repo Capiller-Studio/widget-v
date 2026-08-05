@@ -5,7 +5,8 @@
     .conv-details-top
       .title = conversation.title || "Conversation ##{conversation.identifier.last(4)}"
       .conv-time
-        - last_msg_time = conversation.messages.last&.created_at || conversation.updated_at
+        - last_message = conversation.last_message
+        - last_msg_time = last_message&.created_at || conversation.updated_at
         - if last_msg_time
           - if last_msg_time.today?
             = last_msg_time.strftime("%l:%M %p").strip
@@ -15,7 +16,6 @@
             = last_msg_time.strftime("%A")
           - else
             = last_msg_time.strftime("%m/%d/%y")
-    - last_message = conversation.messages.order(:created_at).last
     - if last_message&.content.present?
       .last-msg = strip_tags(last_message.content.to_s).strip.truncate(40)
     - elsif last_message&.attachments&.any?

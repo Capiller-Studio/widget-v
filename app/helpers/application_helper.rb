@@ -5,7 +5,7 @@ module ApplicationHelper
     {
       account_id: @account&.id || params[:account_id],
       widget_id: @widget&.id || params[:widget_id],
-      customer_id: @customer&.id || params[:customer_id],
+      customer_session_token: customer_session_token,
       locale: I18n.locale
     }.compact.merge(overrides)
   end

@@ -2,13 +2,20 @@ import { Controller } from "@hotwired/stimulus"
 import { createConsumer } from "@rails/actioncable"
 import { DeskbolicEditor } from "../lib/deskbolic_editor"
 
+const cableConnections = new Map()
+const CABLE_DISCONNECT_DELAY = 30000
+
+function cableConnectionKey(cableUrl, connectionToken) {
+  return `${cableUrl}|${connectionToken}`
+}
+
 export default class extends Controller {
   static targets = ["editorContainer"]
   static values = {
     connectionToken: String,
     accountId: String,
     widgetId: String,
-    customerId: String,
+    customerSessionToken: String,
     url: String,
     avatarUrl: String,
     cableUrl: String,
@@ -19,9 +26,7 @@ export default class extends Controller {
   }
 
   connect() {
-    console.log("[Deskbolic] Widget Stimulus controller connected!")
-
-    this.persistCustomerId()
+    this.persistResumeToken()
 
     // Initialize Lexical editor if container exists
     const editorContainer = this.element.querySelector('.de-container')
@@ -31,7 +36,6 @@ export default class extends Controller {
 
       this.deskbolicEditor = new DeskbolicEditor(editorContainer, {
         onSubmit: (text, files) => this._sendMessage(text, files),
-        onFileSelect: (files) => console.log('[Deskbolic] Files selected:', files.length),
         csrfToken: this.csrfToken,
         i18n: i18n
       })
@@ -56,49 +60,26 @@ export default class extends Controller {
       ? `${metaUrl}?customer_token=${this.connectionTokenValue}`
       : `/cable?customer_token=${this.connectionTokenValue}`
 
-    console.log('[Deskbolic] Connecting to ActionCable:', cableUrl.substring(0, 50) + '...')
-    this.consumer = createConsumer(cableUrl)
-    this.channel = this.consumer.subscriptions.create(
-      {
-        channel: "WebWidgetChannel",
-        connection_token: this.connectionTokenValue
-      },
-      {
-        connected: () => this.onConnected(),
-        disconnected: () => this.onDisconnected(),
-        rejected: () => this.onRejected(),
-        received: (data) => this.handleReceived(data)
-      }
-    )
+    this.subscribeToCable(cableUrl)
   }
 
   disconnect() {
     if (this.deskbolicEditor) this.deskbolicEditor.destroy()
-    if (this.channel) this.channel.unsubscribe()
-    if (this.consumer) this.consumer.disconnect()
+    if (this._imagePreviewHandler) {
+      const list = document.getElementById("messages-list")
+      if (list) list.removeEventListener("click", this._imagePreviewHandler)
+      this._imagePreviewHandler = null
+    }
+    this.releaseCable()
   }
 
   // --- Message sending (called by DeskbolicEditor onSubmit) ---
-  _sendMessage(text, files = []) {
+  async _sendMessage(text, files = []) {
     if (!text && files.length === 0) return
 
     const formData = new FormData()
     if (text) formData.append("content", text)
     files.forEach((file, i) => formData.append(`attachments[${i}]`, file))
-
-    fetch(this.urlValue, {
-      method: "POST",
-      headers: { "X-CSRF-Token": this.csrfToken },
-      body: formData
-    })
-    .then(response => {
-      if (!response.ok) {
-        console.error("[Deskbolic] Message send failed:", response.status)
-      }
-    })
-    .catch(error => {
-      console.error("[Deskbolic] Network error:", error)
-    })
 
     // Show outgoing message immediately
     if (text) this.appendOutgoingMessage(text)
@@ -112,6 +93,22 @@ export default class extends Controller {
         this.appendOutgoingMessage(`📎 ${file.name}`)
       }
     })
+
+    try {
+      const response = await fetch(this.urlValue, {
+        method: "POST",
+        headers: { "X-CSRF-Token": this.csrfToken },
+        body: formData
+      })
+
+      if (!response.ok) {
+        throw new Error(`Message send failed: ${response.status}`)
+      }
+    } catch (error) {
+      console.error("[Deskbolic] Network error:", error)
+      this.showInlineError("Message failed to send. Please try again.")
+      throw error
+    }
   }
 
   search(event) {
@@ -120,6 +117,7 @@ export default class extends Controller {
 
     clearTimeout(this._searchTimeout)
     this._searchTimeout = setTimeout(() => {
+      this.setSearching(true)
       const url = new URL(event.target.dataset.url, window.location.origin)
       url.searchParams.set("q", query)
 
@@ -135,19 +133,71 @@ export default class extends Controller {
           Turbo.renderStreamMessage(html)
         }
       })
+      .catch(error => {
+        console.error("[Deskbolic] Search failed:", error)
+      })
+      .finally(() => this.setSearching(false))
     }, 300)
   }
 
   // --- WebSocket lifecycle ---
 
+  subscribeToCable(cableUrl) {
+    this.releaseCable()
+
+    const key = cableConnectionKey(cableUrl, this.connectionTokenValue)
+    let connection = cableConnections.get(key)
+
+    if (!connection) {
+      const handlers = new Set()
+      const consumer = createConsumer(cableUrl)
+      const channel = consumer.subscriptions.create(
+        {
+          channel: "WebWidgetChannel",
+          connection_token: this.connectionTokenValue
+        },
+        {
+          connected: () => handlers.forEach((controller) => controller.onConnected()),
+          disconnected: () => handlers.forEach((controller) => controller.onDisconnected()),
+          rejected: () => handlers.forEach((controller) => controller.onRejected()),
+          received: (data) => handlers.forEach((controller) => controller.handleReceived(data))
+        }
+      )
+
+      connection = { key, consumer, channel, handlers, disconnectTimer: null }
+      cableConnections.set(key, connection)
+    }
+
+    clearTimeout(connection.disconnectTimer)
+    connection.disconnectTimer = null
+    connection.handlers.add(this)
+    this.cableConnection = connection
+  }
+
+  releaseCable() {
+    const connection = this.cableConnection
+    if (!connection) return
+
+    connection.handlers.delete(this)
+    this.cableConnection = null
+
+    if (connection.handlers.size > 0) return
+
+    connection.disconnectTimer = setTimeout(() => {
+      if (connection.handlers.size > 0) return
+
+      connection.channel.unsubscribe()
+      connection.consumer.disconnect()
+      cableConnections.delete(connection.key)
+    }, CABLE_DISCONNECT_DELAY)
+  }
+
   onConnected() {
     this._reconnectAttempts = 0
-    console.log("[Deskbolic] WebSocket connected")
   }
 
   onDisconnected() {
     this._reconnectAttempts++
-    console.log("[Deskbolic] WebSocket disconnected, attempt:", this._reconnectAttempts)
   }
 
   onRejected() {
@@ -173,8 +223,6 @@ export default class extends Controller {
   // --- Message handling ---
 
   handleReceived(data) {
-    console.log("[Deskbolic] Received WebSocket data:", data)
-
     if (data.event === "typing") {
       this.showTypingIndicator(data.status)
       return
@@ -519,16 +567,36 @@ export default class extends Controller {
     }
   }
 
-  // --- Communication with parent frame ---
-  persistCustomerId() {
-    if (!this.accountIdValue || !this.widgetIdValue || !this.customerIdValue) return
+  showInlineError(message) {
+    let errorEl = this.element.querySelector(".widget-inline-error")
+    if (!errorEl) {
+      errorEl = document.createElement("div")
+      errorEl.classList.add("widget-inline-error")
+      this.element.appendChild(errorEl)
+    }
 
-    const storageKey = `deskbolic:customer:${this.accountIdValue}:${this.widgetIdValue}`
+    errorEl.textContent = message
+    clearTimeout(this._inlineErrorTimer)
+    this._inlineErrorTimer = setTimeout(() => errorEl.remove(), 4000)
+  }
+
+  setSearching(isLoading) {
+    const helpSection = this.element.closest(".help-section") || this.element
+    helpSection.classList.toggle("is-searching", isLoading)
+  }
+
+  // --- Communication with parent frame ---
+  persistResumeToken() {
+    if (!this.accountIdValue || !this.widgetIdValue || !this.customerSessionTokenValue) return
+
+    const storageKey = `deskbolic:customer-session-token:${this.accountIdValue}:${this.widgetIdValue}`
     try {
-      window.localStorage.setItem(storageKey, this.customerIdValue)
+      window.localStorage.setItem(storageKey, this.customerSessionTokenValue)
     } catch (error) {}
 
-    this.notifyParent("deskbolic:customer", { customer_id: this.customerIdValue })
+    this.notifyParent("deskbolic:customer", {
+      customer_session_token: this.customerSessionTokenValue
+    })
   }
 
   notifyParent(type, data) {

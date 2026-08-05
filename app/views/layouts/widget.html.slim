@@ -11,7 +11,8 @@ html
 
     = yield :head
 
-    link rel="icon" href="/icon.png" type="image/png"
+    = favicon_link_tag(image_path("fav_icon.png"))
+    = favicon_link_tag(image_path("fav_icon.png"), rel: "apple-touch-icon")
 
     = stylesheet_link_tag "application", "data-turbo-track": "reload"
     = javascript_include_tag "application", "data-turbo-track": "reload", type: "module"
@@ -64,15 +65,15 @@ html
       }
 
   body class=(@form.present? ? "contact-form-embed" : nil) data-controller="live-preview"
-    - widget_customer_storage_key = @account && @widget ? "deskbolic:customer:#{@account.id}:#{@widget.id}" : nil
-    - if widget_customer_storage_key.present? && @customer
+    - widget_customer_session_token_storage_key = @account && @widget ? "deskbolic:customer-session-token:#{@account.id}:#{@widget.id}" : nil
+    - if widget_customer_session_token_storage_key.present? && @customer
       javascript:
         (function() {
           try {
-            window.localStorage.setItem(#{widget_customer_storage_key.to_json.html_safe}, #{@customer.id.to_json.html_safe});
+            window.localStorage.setItem(#{widget_customer_session_token_storage_key.to_json.html_safe}, #{customer_session_token.to_json.html_safe});
           } catch (error) {}
           if (window.parent !== window) {
-            window.parent.postMessage({ type: "deskbolic:customer", customer_id: #{@customer.id.to_json.html_safe} }, "*");
+            window.parent.postMessage({ type: "deskbolic:customer", customer_session_token: #{customer_session_token.to_json.html_safe} }, "*");
           }
         })();
 

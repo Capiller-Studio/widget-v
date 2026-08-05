@@ -3,6 +3,9 @@
 class WidgetController < ApplicationController
   layout "widget"
 
+  protect_from_forgery with: :null_session
+  helper_method :customer_session_token
+
   before_action :set_widget
   around_action :set_sharding_context
   before_action :set_frame_ancestors
@@ -46,7 +49,7 @@ class WidgetController < ApplicationController
     end
 
     find_or_set_conversation
-    messages_query = @conversation&.messages&.includes(:attachments, sender: { avatar_attachment: :blob })&.order(created_at: :desc) || Message.none
+    messages_query = @conversation&.messages&.includes(:sender, attachments: { file_attachment: :blob })&.order(created_at: :desc) || Message.none
     @pagy, @messages = pagy(messages_query, items: 20)
     
     # We ordered by desc for pagy, so reverse to show in chronological order in UI
@@ -64,7 +67,14 @@ class WidgetController < ApplicationController
   end
 
   def conversations
-    base_query = @customer ? @customer.conversations.where(inbox: @inbox).order(updated_at: :desc) : Conversation.none
+    base_query = if @customer
+                   @customer.conversations
+                     .where(account: @account, inbox: @inbox)
+                     .includes(last_message: { attachments: { file_attachment: :blob } })
+                     .order(updated_at: :desc)
+                 else
+                   Conversation.none
+                 end
     @pagy, @conversations = pagy(base_query, items: 10)
 
     respond_to do |format|
@@ -225,7 +235,7 @@ class WidgetController < ApplicationController
 
     # After creating the customer, redirect to messages view
     find_or_set_conversation
-    messages_query = @conversation&.messages&.includes(:attachments, sender: { avatar_attachment: :blob })&.order(created_at: :desc) || Message.none
+    messages_query = @conversation&.messages&.includes(:sender, attachments: { file_attachment: :blob })&.order(created_at: :desc) || Message.none
     @pagy, @messages = pagy(messages_query, items: 20)
     @messages = @messages.reverse
 
@@ -233,7 +243,7 @@ class WidgetController < ApplicationController
       format.turbo_stream do
         render(turbo_stream: turbo_stream.update("widget", partial: "widget/messages"))
       end
-      format.html { redirect_to widget_messages_path(account_id: @account.id, widget_id: @widget.id, customer_id: @customer&.id, locale: I18n.locale) }
+      format.html { redirect_to widget_messages_path(widget_route_params) }
     end
   end
 
@@ -364,12 +374,28 @@ class WidgetController < ApplicationController
   end
 
   def restore_customer
-    customer_id = params[:customer_id].presence
-    customer_id ||= session[:customer_id] if session[:widget_id] == @widget.id
-    return unless customer_id.present?
+    customer_session_token = params[:customer_session_token].presence
+    customer_session_token ||= session[:customer_session_token] if session[:widget_id] == @widget.id
+    return unless customer_session_token.present?
 
-    @customer = @account.customers.joins(:customer_inboxes).find_by(id: customer_id, customer_inboxes: { inbox_id: @inbox.id })
-    @customer_inbox = @customer&.customer_inboxes&.find_by(inbox: @inbox)
+    payload = JwtService.decode(customer_session_token)
+    return unless valid_resume_payload?(payload)
+
+    @customer_inbox = @inbox.customer_inboxes
+      .joins(:customer)
+      .includes(:customer)
+      .where(customers: { account_id: @account.id })
+      .find_by(customer_id: payload[:customer_id])
+    @customer = @customer_inbox&.customer
+  end
+
+  def valid_resume_payload?(payload)
+    payload.present? &&
+      payload[:purpose] == "widget_customer_resume" &&
+      payload[:account_id].to_s == @account.id.to_s &&
+      payload[:widget_id].to_s == @widget.id.to_s &&
+      payload[:inbox_id].to_s == @inbox.id.to_s &&
+      payload[:customer_id].present?
   end
 
   def store_customer_in_session
@@ -377,6 +403,7 @@ class WidgetController < ApplicationController
 
     session[:customer_id] = @customer.id
     session[:customer_external_id] = @customer_inbox&.external_id
+    session[:customer_session_token] = customer_session_token
   end
 
   def widget_customer_identifier
@@ -391,12 +418,27 @@ class WidgetController < ApplicationController
     params[:widget_id].presence || session[:widget_id]
   end
 
+  def customer_session_token
+    return unless @customer && @customer_inbox
+
+    @customer_session_token ||= JwtService.encode(
+      {
+        purpose: "widget_customer_resume",
+        account_id: @account.id,
+        widget_id: @widget.id,
+        inbox_id: @inbox.id,
+        customer_id: @customer.id
+      },
+      expiry: 30.days
+    )
+  end
+
   def default_url_options
     options = { locale: I18n.locale }
 
     options[:account_id] = @account.id if @account
     options[:widget_id] = @widget.id if @widget
-    options[:customer_id] = @customer.id if @customer
+    options[:customer_session_token] = customer_session_token if @customer
 
     options
   end
