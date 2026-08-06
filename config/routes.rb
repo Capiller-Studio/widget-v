@@ -7,8 +7,6 @@ Rails.application.routes.draw do
   get "demo/widget/:account_id/:widget_id", to: "demo#show", as: :demo if Rails.env.local?
   get "demo/form/:account_id/:form_id", to: "demo#show_form", as: :demo_form if Rails.env.local?
 
-  # ActionCable WebSocket endpoint
-  mount ActionCable.server => "/cable"
 
   # Embed script endpoint (served cross-origin via <script> tag)
   get "w/:account_id/:widget_id/embed.js", to: "embed#show", as: :embed_script, defaults: { format: :js }

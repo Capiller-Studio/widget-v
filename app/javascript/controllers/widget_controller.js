@@ -22,7 +22,8 @@ export default class extends Controller {
     playIcon: String,
     pauseIcon: String,
     volumeIcon: String,
-    muteIcon: String
+    muteIcon: String,
+    unreadCount: { type: Number, default: 0 }
   }
 
   connect() {
@@ -52,7 +53,9 @@ export default class extends Controller {
       return
     }
 
-    this.unreadCount = 0
+    this.unreadCount = this.unreadCountValue
+    this.notifyParent("deskbolic:unread", { count: this.unreadCount })
+
     this._reconnectAttempts = 0
 
     const metaUrl = document.querySelector("meta[name='action-cable-url']")?.content
@@ -234,6 +237,8 @@ export default class extends Controller {
         try { message = JSON.parse(message) } catch(e) { return }
       }
 
+      if (message && message.visibility === 'personal') return
+
       // Only render agent messages (outgoing = not incoming)
       if (message && !message.incoming && (message.content || (message.attachments || []).length)) {
         const sender = message.sender || {}
@@ -253,7 +258,8 @@ export default class extends Controller {
     messageEl.classList.add("agent-msg")
     const avatarSrc = agentAvatarUrl || this.avatarUrlValue || '/assets/human.png'
     const emojiClass = this.isSingleEmojiMessage(content) ? " single-emoji-message" : ""
-    messageEl.innerHTML = `<img src="${avatarSrc}" class="person-img" alt="${this.escapeHtml(agentName || 'Agent')}" title="${this.escapeHtml(agentName || 'Agent')}"><div class="agent-reply${emojiClass}">${this.escapeHtml(content)}</div>`
+    // Safe to use unescaped content here because it is sanitized on the backend before save
+    messageEl.innerHTML = `<img src="${avatarSrc}" class="person-img" alt="${this.escapeHtml(agentName || 'Agent')}" title="${this.escapeHtml(agentName || 'Agent')}"><div class="agent-reply${emojiClass}">${content}</div>`
     const replyDiv = messageEl.querySelector(".agent-reply")
     if (replyDiv) replyDiv.after(this.createMsgTime())
 

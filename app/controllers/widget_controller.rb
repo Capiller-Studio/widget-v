@@ -12,6 +12,7 @@ class WidgetController < ApplicationController
   before_action :identify_customer
   before_action :set_locale
   before_action :set_agents
+  before_action :set_unread_count
 
   def index; end
 
@@ -49,7 +50,7 @@ class WidgetController < ApplicationController
     end
 
     find_or_set_conversation
-    messages_query = @conversation&.messages&.includes(:sender, attachments: { file_attachment: :blob })&.order(created_at: :desc) || Message.none
+    messages_query = @conversation&.messages&.global&.includes(:sender, attachments: { file_attachment: :blob })&.order(created_at: :desc) || Message.none
     @pagy, @messages = pagy(messages_query, items: 20)
     
     # We ordered by desc for pagy, so reverse to show in chronological order in UI
@@ -431,6 +432,15 @@ class WidgetController < ApplicationController
       },
       expiry: 30.days
     )
+  end
+
+  def set_unread_count
+    if @customer && @account && @inbox
+      counts = UnreadCounts::Current.call(member: @customer, account_id: @account.id)
+      @unread_count = counts[:inboxes][@inbox.id.to_s].to_i
+    else
+      @unread_count = 0
+    end
   end
 
   def default_url_options
