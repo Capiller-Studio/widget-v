@@ -8,7 +8,7 @@
 
   // Read configuration from the script tag's data attributes
   var scriptTag = document.currentScript;
-  var locale     = scriptTag.getAttribute("data-locale") || "en";
+  var locale     = scriptTag.getAttribute("data-locale") || (navigator.language || "").split("-")[0] || "en";
   var identifier = scriptTag.getAttribute("data-identifier") || "";
   var signature  = scriptTag.getAttribute("data-signature") || "";
   var email      = scriptTag.getAttribute("data-email") || "";
