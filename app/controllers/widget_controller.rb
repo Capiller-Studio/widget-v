@@ -31,7 +31,8 @@ class WidgetController < ApplicationController
         @customer = Customers::CustomerCreator.call(
           account: @account,
           inbox: @inbox,
-          external_id: external_id
+          external_id: external_id,
+          params: { locale: I18n.locale }
         )
         @customer_inbox = @customer&.customer_inboxes&.find_by(inbox: @inbox)
         store_customer_in_session
@@ -209,7 +210,8 @@ class WidgetController < ApplicationController
       params: {
         name: customer_data[:name],
         first_name: customer_data[:first_name] || customer_data[:name]&.split(" ")&.first,
-        last_name: customer_data[:last_name] || customer_data[:name]&.split(" ")&.drop(1)&.join(" ")
+        last_name: customer_data[:last_name] || customer_data[:name]&.split(" ")&.drop(1)&.join(" "),
+        locale: I18n.locale
       }
     )
 
@@ -366,7 +368,8 @@ class WidgetController < ApplicationController
       name: @customer&.name || params[:name],
       first_name: @customer&.first_name || params[:first_name],
       last_name: @customer&.last_name || params[:last_name],
-      avatar_url: params[:avatar_url]
+      avatar_url: params[:avatar_url],
+      locale: I18n.locale
     }
   end
 
@@ -388,6 +391,10 @@ class WidgetController < ApplicationController
       .where(customers: { account_id: @account.id })
       .find_by(customer_id: payload[:customer_id])
     @customer = @customer_inbox&.customer
+
+    if @customer && @customer.locale != I18n.locale.to_s
+      @customer.update(locale: I18n.locale)
+    end
   end
 
   def valid_resume_payload?(payload)
