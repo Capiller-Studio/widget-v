@@ -1,17 +1,29 @@
 ar:
   widget:
     home:
-      title: "لنبدأ محادثة جديدة مع"
+      title: "كيف يمكننا مساعدتك اليوم؟"
       team: "فريقنا!"
-      subheading: "نساعد أعمالك على النمو من خلال ربطك بعملائك."
+      subheading: "نرد عادةً خلال بضع دقائق."
+      greeting: "مرحباً 👋"
       start_conversation: "بدء محادثة"
-      reply_time: "وقت الرد المعتاد"
+      chat_with_team: "تحدث مع فريقنا"
+      browse_articles: "تصفح مقالات المساعدة"
+      browse_articles_sub: "اعثر على إجابات للأسئلة الشائعة"
+      search_placeholder: "ابحث عن مساعدة..."
+      need_help: "هل ما زلت بحاجة إلى مساعدة؟"
+      contact_support_sub: "تواصل مع فريق الدعم لدينا"
+      contact_support: "تواصل مع الدعم"
+      reply_time: "وقت الرد المعتاد لدينا"
       reply_time_unit: "بضع دقائق"
     conversations:
       title: "المحادثات"
+      subtitle: "كل محادثاتك في مكان واحد."
       messages: "الرسائل"
       new_conversation: "بدء محادثة"
       no_conversations: "لا توجد محادثات بعد."
+      search_placeholder: "ابحث في المحادثات..."
+      resolved: "تم الحل"
+      resolved_message: "تم حل المحادثة، يرجى بدء محادثة جديدة."
     footer:
       home: "الرئيسية"
       conversations: "المحادثات"
@@ -19,6 +31,8 @@ ar:
     chat:
       placeholder: "اكتب رسالة..."
       typing: "يكتب..."
+      online: "متصل"
+      today: "اليوم"
     editor:
       placeholder: "اكتب رسالة…"
       emoji: "رموز تعبيرية"
@@ -38,8 +52,24 @@ ar:
       submit: "بدء الدردشة"
     help_center:
       title: "مركز المساعدة"
-      search_placeholder: "البحث عن مقالات..."
+      subtitle: "اعثر على إجابات لأسئلتك"
+      search_placeholder: "ابحث في المقالات..."
       no_results: "لم يتم العثور على مقالات."
+      untitled: "بدون عنوان"
+      article_count:
+        one: "%{count} مقال"
+        other: "%{count} مقالات"
+      browse_categories: "تصفح حسب الفئة"
+      view_all: "عرض الكل"
+      category_subtitle: "تصفح المقالات في هذه الفئة"
+      all_articles: "كل المقالات"
+      sort_popular: "الأكثر شيوعاً"
+      sort_recent: "الأحدث"
+      updated_ago: "تم التحديث قبل %{days} أيام"
+      no_content: "لا يحتوي هذا المقال على محتوى بعد."
+      helpful_question: "هل كان هذا المقال مفيداً؟"
+      yes: "نعم"
+      no: "لا"
   contact_form:
     success_title: "تم إرسال الرسالة!"
     send_message: "إرسال الرسالة"

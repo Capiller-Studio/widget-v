@@ -21,6 +21,7 @@ Rails.application.routes.draw do
       get "conversations",  to: "widget#conversations",  as: :conversations
       get "knowledge-base", to: "widget#help",           as: :help_center
       get "knowledge-base/categories/:category_id", to: "widget#category", as: :help_category
+      get "knowledge-base/categories/:category_id/articles/:article_id", to: "widget#article", as: :help_article
       get "search",         to: "widget#search",         as: :search
       post "contact",       to: "widget#create_customer", as: :create_customer
     end

@@ -1,30 +1,51 @@
-= button_to widget_messages_path(widget_route_params(conversation_id: conversation.id, format: :turbo_stream)), method: :get, class: "conv-item", form: { data: { turbo_stream: true } } do
-  .conv-icon
-    = inline_svg_tag("Group.svg", class: "theme-svg")
-  .conv-details
-    .conv-details-top
-      .title = conversation.title || "Conversation ##{conversation.identifier.last(4)}"
-      .conv-time
+- resolved = conversation.resolved?
+- conversation_item_content = capture do
+  .widget-conv-avatar
+    - assignee = conversation.assignee
+    - if assignee&.avatar&.attached?
+      = image_tag(assignee.avatar.variant(:thumb), class: "widget-conv-avatar-img")
+    - else
+      .widget-conv-avatar-img.widget-conv-avatar-placeholder
+        = (assignee&.display_name || assignee&.first_name || "A")&.first&.upcase
+    span.widget-conv-online-dot
+  .widget-conv-body
+    .widget-conv-top
+      .widget-conv-name = conversation.title || "Conversation ##{conversation.identifier.last(4)}"
+      .widget-conv-meta
         - last_message = conversation.last_message
         - last_msg_time = last_message&.created_at || conversation.updated_at
         - if last_msg_time
-          - if last_msg_time.today?
-            = last_msg_time.strftime("%l:%M %p").strip
-          - elsif last_msg_time.yesterday?
-            = t('widget.conversations.yesterday', default: 'Yesterday')
-          - elsif last_msg_time > 6.days.ago
-            = last_msg_time.strftime("%A")
-          - else
-            = last_msg_time.strftime("%m/%d/%y")
-    - if last_message&.content.present?
-      .last-msg = strip_tags(last_message.content.to_s).strip.truncate(40)
-    - elsif last_message&.attachments&.any?
-      - attachment = last_message.attachments.last
-      - if attachment.audio?
-        .last-msg 🎵 #{t('widget.voice_message', default: 'Voice message')}
-      - elsif attachment.image?
-        .last-msg 📷 #{t('widget.photo', default: 'Photo')}
+          .widget-conv-time
+            - if last_msg_time.today?
+              = last_msg_time.strftime("%l:%M %p").strip
+            - elsif last_msg_time.yesterday?
+              = t('widget.conversations.yesterday', default: 'Yesterday')
+            - elsif last_msg_time > 6.days.ago
+              = last_msg_time.strftime("%A")
+            - else
+              = last_msg_time.strftime("%m/%d/%y")
+    .widget-conv-preview
+      - if last_message&.content.present?
+        = strip_tags(last_message.content.to_s).strip.truncate(40)
+      - elsif last_message&.attachments&.any?
+        - attachment = last_message.attachments.last
+        - if attachment.audio?
+          | 🎵 #{t('widget.voice_message', default: 'Voice message')}
+        - elsif attachment.image?
+          | 📷 #{t('widget.photo', default: 'Photo')}
+        - else
+          | 📎 #{attachment.file.filename.to_s.truncate(30)}
       - else
-        .last-msg 📎 #{attachment.file.filename.to_s.truncate(30)}
-    - else
-      .last-msg = t('widget.conversations.no_messages')
+        = t('widget.conversations.no_messages')
+    - if resolved
+      .widget-conv-tag = t('widget.conversations.resolved', default: 'Resolved')
+
+.widget-conv-row
+  - if resolved
+    button.widget-conv-item.widget-conv-item--resolved type="button" data-action="click->widget#showResolvedConversationMessage"
+      = conversation_item_content
+    .widget-resolved-message hidden=true
+      = t('widget.conversations.resolved_message', default: 'Conversation resolved, please start a new conversation.')
+  - else
+    = button_to widget_messages_path(widget_route_params(conversation_id: conversation.id, format: :turbo_stream)), method: :get, class: "widget-conv-item", form: { data: { turbo_stream: true } } do
+      = conversation_item_content

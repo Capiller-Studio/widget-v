@@ -1,14 +1,13 @@
-.footer
-  = button_to widget_home_path(widget_route_params(format: :turbo_stream)), method: :get, class: "footer-btn #{active[:home]}", form: { data: { turbo_stream: true } } do
-    = inline_svg_tag("home_purple.svg", class: "theme-svg")
-    = inline_svg_tag("home.svg", class: "svg-btn")
-    | Home
-  = button_to widget_conversations_path(widget_route_params(format: :turbo_stream)), method: :get, class: "footer-btn #{active[:message]}", form: { data: { turbo_stream: true } } do
-    = inline_svg_tag("messages_purple.svg", class: "theme-svg")
-    = inline_svg_tag("messages.svg", class: "svg-btn")
-    | Conversations
+.widget-footer-nav
+  = button_to widget_home_path(widget_route_params(format: :turbo_stream)), method: :get, class: "widget-footer-nav-btn #{active[:home]}", form: { data: { turbo_stream: true } } do
+    span.widget-footer-nav-icon
+      = inline_svg_tag("home.svg", class: "svg-icon")
+
+  = button_to widget_conversations_path(widget_route_params(format: :turbo_stream)), method: :get, class: "widget-footer-nav-btn #{active[:message]}", form: { data: { turbo_stream: true } } do
+    span.widget-footer-nav-icon
+      = inline_svg_tag("message.svg", class: "svg-icon")
+
   - if @widget.help_center_enabled?
-    = button_to widget_help_center_path(widget_route_params(format: :turbo_stream)), method: :get, class: "footer-btn #{active[:help]}", form: { data: { turbo_stream: true } } do
-      = inline_svg_tag("help_purple.svg", class: "theme-svg")
-      = inline_svg_tag("help.svg", class: "svg-btn")
-      | Help Center
+    = button_to widget_help_center_path(widget_route_params(format: :turbo_stream)), method: :get, class: "widget-footer-nav-btn #{active[:help]}", form: { data: { turbo_stream: true } } do
+      span.widget-footer-nav-icon
+        = inline_svg_tag("search.svg", class: "svg-icon")

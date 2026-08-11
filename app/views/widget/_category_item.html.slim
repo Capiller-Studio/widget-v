@@ -1,7 +1,8 @@
-.article
-  .heading = category.name
-  .description = category.description&.truncate(80)
-  .more-details
-    = link_to widget_help_category_path(widget_route_params(category_id: category.id, format: :turbo_stream)), class: "view-more", data: { turbo_stream: true } do
-      | View More
-      = inline_svg_tag("right_arrow.svg")
+= link_to widget_help_category_path(widget_route_params(category_id: category.id, format: :turbo_stream)), class: "widget-help-category-row widget-category-row", data: { turbo_stream: true } do
+  .widget-icon-chip.widget-icon-chip--brand
+    = category_icon_svg(category)
+  .widget-category-row-text
+    .widget-category-name = category.name.presence || t('widget.help_center.untitled', default: "Untitled")
+    - article_count = category_article_count(category)
+    .widget-category-count = t('widget.help_center.article_count', count: article_count, default: "#{article_count} articles")
+  .widget-chevron ›

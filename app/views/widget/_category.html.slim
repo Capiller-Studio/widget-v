@@ -1,18 +1,44 @@
-.chat-screen
+.chat-screen.widget-article-list-page
   .homepage
-    .header-1 style="padding-left: 0px;"
-      = button_to widget_help_center_path(widget_route_params(format: :turbo_stream)), method: :get, class: "chat-button", style: "margin-left: 10px;", form: { data: { turbo_stream: true } } do
-        = inline_svg_tag("left_arrow.svg", style: "width: 24px; height: 24px; fill: white;")
-      .header-text style="margin-left: 2px;" = @category.name
-
-    .main.main-gradient
-      .help-section
-        #help-results
-          - if @articles.any?
-            .articles-col#articles-list
-              = render partial: "widget/article_item", collection: @articles, as: :article
-              = render "widget/articles_pager"
-          - else
-            .empty-state
-              p = t('widget.help_center.no_results', default: "No articles found.")
-    = render("footer", active: { help: "active" })
+    .widget-hero.widget-hero--category
+      .widget-hero-top
+        .widget-article-detail-back
+          = button_to widget_help_center_path(widget_route_params(format: :turbo_stream)), method: :get, class: "widget-article-detail-back-btn", form: { data: { turbo_stream: true } } do
+            = inline_svg_tag("back_arrow.svg", class: "widget-article-detail-back-icon")
+        button.widget-close-btn type="button" aria-label="Close"
+          | ×
+      .widget-hero-content
+        h1.widget-hero-title = @category.name.presence || t('widget.help_center.untitled', default: "Untitled")
+        p.widget-hero-subtitle = @category.description.presence || t('widget.help_center.category_subtitle', default: "Browse articles in this category")
+    .widget-category-stats-bar
+      .widget-category-stat
+        .widget-category-stat-icon
+          = inline_svg_tag("article.svg")
+        .widget-category-stat-text
+          .widget-category-stat-value = compact_stat_value(@category_stats[:articles])
+          .widget-category-stat-label = t('widget.help_center.stats_articles', default: "Articles")
+      .widget-category-stat
+        .widget-category-stat-icon
+          = inline_svg_tag("views.svg")
+        .widget-category-stat-text
+          .widget-category-stat-value = compact_stat_value(@category_stats[:views])
+          .widget-category-stat-label = t('widget.help_center.stats_views', default: "Views")
+      .widget-category-stat
+        .widget-category-stat-icon
+          = inline_svg_tag("time.svg")
+        .widget-category-stat-text
+          .widget-category-stat-value = t('widget.help_center.stats_read_time_value', count: @category_stats[:avg_read_time], default: "#{@category_stats[:avg_read_time]} min")
+          .widget-category-stat-label = t('widget.help_center.stats_avg_read_time', default: "Avg. read time")
+    .widget-content-sheet
+      .widget-section-header.widget-section-header--row
+        h2 = t('widget.help_center.all_articles', default: "All articles")
+        .widget-sort-label
+          span = t('widget.help_center.sort_by', default: "Sort by:")
+          strong = t('widget.help_center.sort_popular', default: "Popular")
+      .widget-article-list#articles-list
+        - if @articles.any?
+          = render partial: "widget/article_item", collection: @articles, as: :article
+          = render "widget/articles_pager"
+        - else
+          .empty-state
+            p = t('widget.help_center.no_results', default: "No articles found.")

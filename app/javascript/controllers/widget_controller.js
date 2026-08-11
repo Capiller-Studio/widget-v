@@ -17,12 +17,7 @@ export default class extends Controller {
     widgetId: String,
     customerSessionToken: String,
     url: String,
-    avatarUrl: String,
     cableUrl: String,
-    playIcon: String,
-    pauseIcon: String,
-    volumeIcon: String,
-    muteIcon: String,
     unreadCount: { type: Number, default: 0 }
   }
 
@@ -84,29 +79,22 @@ export default class extends Controller {
     if (text) formData.append("content", text)
     files.forEach((file, i) => formData.append(`attachments[${i}]`, file))
 
-    // Show outgoing message immediately
-    if (text) this.appendOutgoingMessage(text)
-    // Show image previews for file attachments
-    files.forEach(file => {
-      if (file.type.startsWith('image/')) {
-        this.appendOutgoingImage(file)
-      } else if (file.type.startsWith('audio/')) {
-        this.appendOutgoingAudio(file)
-      } else {
-        this.appendOutgoingMessage(`📎 ${file.name}`)
-      }
-    })
-
     try {
       const response = await fetch(this.urlValue, {
         method: "POST",
-        headers: { "X-CSRF-Token": this.csrfToken },
+        headers: {
+          "Accept": "text/vnd.turbo-stream.html",
+          "X-CSRF-Token": this.csrfToken
+        },
         body: formData
       })
 
       if (!response.ok) {
         throw new Error(`Message send failed: ${response.status}`)
       }
+
+      await this.renderTurboStreamResponse(response)
+      this.scrollToBottom()
     } catch (error) {
       console.error("[Deskbolic] Network error:", error)
       this.showInlineError("Message failed to send. Please try again.")
@@ -116,31 +104,46 @@ export default class extends Controller {
 
   search(event) {
     const query = event.target.value
-    if (query.length > 0 && query.length < 3) return
 
     clearTimeout(this._searchTimeout)
     this._searchTimeout = setTimeout(() => {
-      this.setSearching(true)
-      const url = new URL(event.target.dataset.url, window.location.origin)
-      url.searchParams.set("q", query)
-
-      fetch(url, {
-        headers: {
-          "Accept": "text/vnd.turbo-stream.html",
-          "X-CSRF-Token": this.csrfToken
-        }
-      })
-      .then(response => response.text())
-      .then(html => {
-        if (typeof Turbo !== "undefined") {
-          Turbo.renderStreamMessage(html)
-        }
-      })
-      .catch(error => {
-        console.error("[Deskbolic] Search failed:", error)
-      })
-      .finally(() => this.setSearching(false))
+      this.performSearch(query, event.target.dataset.url)
     }, 300)
+  }
+
+  submitSearch(event) {
+    event.preventDefault()
+
+    const input = event.target.querySelector(".widget-search-input")
+    if (!input) return
+
+    clearTimeout(this._searchTimeout)
+    this.performSearch(input.value, input.dataset.url)
+  }
+
+  performSearch(query, searchUrl) {
+    const normalizedQuery = query.trim()
+    this.setSearchActive(normalizedQuery.length > 0)
+    this.setSearching(true)
+    const url = new URL(searchUrl, window.location.origin)
+    url.searchParams.set("q", normalizedQuery)
+
+    fetch(url, {
+      headers: {
+        "Accept": "text/vnd.turbo-stream.html",
+        "X-CSRF-Token": this.csrfToken
+      }
+    })
+    .then(response => response.text())
+    .then(html => {
+      if (typeof Turbo !== "undefined") {
+        Turbo.renderStreamMessage(html)
+      }
+    })
+    .catch(error => {
+      console.error("[Deskbolic] Search failed:", error)
+    })
+    .finally(() => this.setSearching(false))
   }
 
   // --- WebSocket lifecycle ---
@@ -207,22 +210,6 @@ export default class extends Controller {
     console.error("[Deskbolic] WebSocket connection rejected. Invalid token.")
   }
 
-  formatTime(date) {
-    const d = date || new Date()
-    let hours = d.getHours()
-    const minutes = d.getMinutes().toString().padStart(2, "0")
-    const ampm = hours >= 12 ? "PM" : "AM"
-    hours = hours % 12 || 12
-    return `${hours}:${minutes} ${ampm}`
-  }
-
-  createMsgTime() {
-    const timeEl = document.createElement("div")
-    timeEl.classList.add("msg-time")
-    timeEl.textContent = this.formatTime()
-    return timeEl
-  }
-
   // --- Message handling ---
 
   handleReceived(data) {
@@ -232,17 +219,19 @@ export default class extends Controller {
     }
 
     if (data.event === "message.created") {
-      let message = data.object
-      if (typeof message === "string") {
-        try { message = JSON.parse(message) } catch(e) { return }
-      }
+      const message = this.parseCableObject(data.object)
 
       if (message && message.visibility === 'personal') return
 
-      // Only render agent messages (outgoing = not incoming)
-      if (message && !message.incoming && (message.content || (message.attachments || []).length)) {
-        const sender = message.sender || {}
-        this.appendIncomingMessage(message.content, message.attachments || [], sender.avatar_url, sender.display_name || sender.name)
+      // Customer messages are rendered from the POST response. Cable events render agent messages.
+      if (message && !this.isIncomingMessage(message)) {
+        const messageId = message.id || message.message_id || message.uuid
+        if (messageId && this.messageRenderedCorrectly(messageId)) return
+
+        if (!this.renderCableMessage(message, messageId)) {
+          console.error("[Deskbolic] Message payload was not renderable:", message)
+          return
+        }
 
         this.unreadCount++
         this.notifyParent("deskbolic:unread", { count: this.unreadCount })
@@ -250,242 +239,278 @@ export default class extends Controller {
     }
   }
 
-  appendIncomingMessage(content, attachments = [], agentAvatarUrl, agentName) {
+  async renderTurboStreamResponse(response) {
+    const html = await response.text()
+    if (!html || typeof Turbo === "undefined") return
+
+    Turbo.renderStreamMessage(html)
+  }
+
+  parseCableObject(object) {
+    if (!object) return null
+    if (typeof object !== "string") return object
+
+    try {
+      return JSON.parse(object)
+    } catch(e) {
+      console.error("[Deskbolic] Failed to parse cable message:", e)
+      return null
+    }
+  }
+
+  renderCableMessage(message, messageId) {
     const list = document.getElementById("messages-list")
-    if (!list) return
+    const content = message.content || ""
+    const attachments = Array.isArray(message.attachments) ? message.attachments : []
+    if (!list || (!content && attachments.length === 0)) return false
 
+    const existingMessage = messageId ? document.getElementById(`message_${messageId}`) : null
+    if (existingMessage && !this.messageRenderedCorrectly(messageId)) existingMessage.remove()
+
+    const messageEl = this.buildMessageElement(message, messageId, content)
+    if (!messageEl) return false
+
+    this.appendCableAttachments(messageEl.querySelector(".agent-reply") || messageEl, attachments)
+    this.appendCableMessageTime(messageEl, message)
+    list.appendChild(messageEl)
+    this.scrollToBottom()
+    return true
+  }
+
+  isIncomingMessage(message) {
+    return message.incoming === true || message.incoming === "true"
+  }
+
+  buildMessageElement(message, messageId, content) {
     const messageEl = document.createElement("div")
-    messageEl.classList.add("agent-msg")
-    const avatarSrc = agentAvatarUrl || this.avatarUrlValue || '/assets/human.png'
-    const emojiClass = this.isSingleEmojiMessage(content) ? " single-emoji-message" : ""
-    // Safe to use unescaped content here because it is sanitized on the backend before save
-    messageEl.innerHTML = `<img src="${avatarSrc}" class="person-img" alt="${this.escapeHtml(agentName || 'Agent')}" title="${this.escapeHtml(agentName || 'Agent')}"><div class="agent-reply${emojiClass}">${content}</div>`
-    const replyDiv = messageEl.querySelector(".agent-reply")
-    if (replyDiv) replyDiv.after(this.createMsgTime())
+    if (messageId) messageEl.id = `message_${messageId}`
 
-    if (attachments.length) {
-      this.appendAttachments(messageEl, attachments)
+    if (this.isIncomingMessage(message)) {
+      messageEl.classList.add("client-reply")
+      if (this.isSingleEmojiMessage(content)) messageEl.classList.add("single-emoji-message")
+      if (content) messageEl.textContent = content
+      return messageEl
     }
 
-    list.appendChild(messageEl)
-    this.scrollToBottom()
+    messageEl.classList.add("agent-msg")
+    const replyEl = document.createElement("div")
+    replyEl.classList.add("agent-reply")
+
+    if (content) {
+      const sanitizedContent = this.sanitizeMessageContent(content)
+      if (this.isSingleEmojiMessage(sanitizedContent)) {
+        replyEl.classList.add("single-emoji-message")
+        replyEl.textContent = this.stripHtml(content).trim()
+      } else {
+        replyEl.innerHTML = sanitizedContent
+      }
+    }
+
+    messageEl.appendChild(replyEl)
+    return messageEl
   }
 
-  appendOutgoingMessage(content) {
-    const list = document.getElementById("messages-list")
-    if (!list) return
+  sanitizeMessageContent(content) {
+    const template = document.createElement("template")
+    template.innerHTML = content
 
-    const messageEl = document.createElement("div")
-    messageEl.classList.add("client-reply")
-    if (this.isSingleEmojiMessage(content)) messageEl.classList.add("single-emoji-message")
-    messageEl.textContent = content
-    messageEl.appendChild(this.createMsgTime())
-    list.appendChild(messageEl)
-    this.scrollToBottom()
+    template.content.querySelectorAll("script, iframe, object, embed").forEach((node) => node.remove())
+    template.content.querySelectorAll("*").forEach((node) => {
+      Array.from(node.attributes).forEach((attribute) => {
+        const name = attribute.name.toLowerCase()
+        const value = attribute.value.trim().toLowerCase()
+        if (name.startsWith("on") || (["href", "src"].includes(name) && value.startsWith("javascript:"))) {
+          node.removeAttribute(attribute.name)
+        }
+      })
+    })
+
+    return template.innerHTML
   }
 
-  appendOutgoingImage(file) {
-    const list = document.getElementById("messages-list")
-    if (!list) return
+  stripHtml(content) {
+    const div = document.createElement("div")
+    div.innerHTML = content || ""
+    return div.textContent || div.innerText || ""
+  }
 
-    const messageEl = document.createElement("div")
-    messageEl.classList.add("client-reply")
+  appendCableAttachments(container, attachments) {
+    if (!container || !attachments.length) return
 
     const attachmentsEl = document.createElement("div")
     attachmentsEl.classList.add("msg-attachments")
 
-    const attachmentImgWrapper = document.createElement("div")
-    attachmentImgWrapper.classList.add("msg-attachment-img")
+    attachments.forEach((attachment) => {
+      const attachmentEl = this.buildCableAttachmentElement(attachment)
+      if (attachmentEl) attachmentsEl.appendChild(attachmentEl)
+    })
 
-    const img = document.createElement("img")
-    img.src = URL.createObjectURL(file)
-    img.classList.add("attachment-image")
-    img.onload = () => this.scrollToBottom()
-
-    attachmentImgWrapper.appendChild(img)
-    attachmentsEl.appendChild(attachmentImgWrapper)
-    messageEl.appendChild(attachmentsEl)
-    messageEl.appendChild(this.createMsgTime())
-    list.appendChild(messageEl)
-
-    this.scrollToBottom()
+    if (attachmentsEl.childElementCount) container.appendChild(attachmentsEl)
   }
 
-  appendOutgoingAudio(file) {
-    const list = document.getElementById("messages-list")
-    if (!list) return
+  buildCableAttachmentElement(attachment) {
+    const url = attachment.url || attachment.file_url || attachment.download_url || attachment.direct_download_url
+    if (!url) return null
 
-    const messageEl = document.createElement("div")
-    messageEl.classList.add("client-reply")
+    const type = attachment.attachment_type || attachment.type || ""
+    const contentType = attachment.content_type || ""
 
-    const attachmentsEl = document.createElement("div")
-    attachmentsEl.classList.add("msg-attachments")
+    if (type === "audio" || contentType.startsWith("audio/")) {
+      return this.buildAudioAttachment(url)
+    }
 
-    const audioWrapper = document.createElement("div")
-    audioWrapper.classList.add("msg-attachment-audio")
-    audioWrapper.dataset.controller = "audio-player"
-    audioWrapper.dataset.audioPlayerPlayIconValue = this.playIconValue || "/assets/play.svg"
-    audioWrapper.dataset.audioPlayerPauseIconValue = this.pauseIconValue || "/assets/pause.svg"
-    audioWrapper.dataset.audioPlayerVolumeIconValue = this.volumeIconValue || "/assets/volume.svg"
-    audioWrapper.dataset.audioPlayerMuteIconValue = this.muteIconValue || "/assets/mute.svg"
+    if (type === "image" || contentType.startsWith("image/")) {
+      return this.buildImageAttachment(url, attachment.filename)
+    }
+
+    return this.buildFileAttachment(url, attachment.filename)
+  }
+
+  buildAudioAttachment(url) {
+    const wrapper = document.createElement("div")
+    wrapper.classList.add("msg-attachment-audio")
+    wrapper.dataset.controller = "audio-player"
+    wrapper.dataset.audioPlayerPlayIconValue = "/assets/play.svg"
+    wrapper.dataset.audioPlayerPauseIconValue = "/assets/pause.svg"
+    wrapper.dataset.audioPlayerVolumeIconValue = "/assets/volume.svg"
+    wrapper.dataset.audioPlayerMuteIconValue = "/assets/mute.svg"
 
     const audio = document.createElement("audio")
     audio.dataset.audioPlayerTarget = "audio"
     audio.preload = "metadata"
-    audio.src = URL.createObjectURL(file)
+    audio.src = url
 
     const controls = document.createElement("div")
     controls.classList.add("audio-player-controls")
 
-    const playBtn = document.createElement("button")
-    playBtn.type = "button"
-    playBtn.classList.add("audio-btn")
-    playBtn.dataset.action = "audio-player#toggle"
-    playBtn.dataset.audioPlayerTarget = "playButton"
+    const playButton = document.createElement("button")
+    playButton.type = "button"
+    playButton.classList.add("audio-btn")
+    playButton.dataset.action = "audio-player#toggle"
+    playButton.dataset.audioPlayerTarget = "playButton"
 
     const playIcon = document.createElement("img")
-    playIcon.src = this.playIconValue || "/assets/play.svg"
+    playIcon.src = "/assets/play.svg"
     playIcon.dataset.audioPlayerTarget = "playIcon"
     playIcon.alt = "Play"
-    playBtn.appendChild(playIcon)
+    playButton.appendChild(playIcon)
 
     const waveform = document.createElement("div")
     waveform.classList.add("audio-waveform")
     waveform.dataset.audioPlayerTarget = "waveform"
 
-    const muteBtn = document.createElement("button")
-    muteBtn.type = "button"
-    muteBtn.classList.add("audio-btn", "audio-mute-btn")
-    muteBtn.dataset.action = "audio-player#toggleMute"
-    muteBtn.dataset.audioPlayerTarget = "muteButton"
+    const muteButton = document.createElement("button")
+    muteButton.type = "button"
+    muteButton.classList.add("audio-btn", "audio-mute-btn")
+    muteButton.dataset.action = "audio-player#toggleMute"
+    muteButton.dataset.audioPlayerTarget = "muteButton"
 
     const muteIcon = document.createElement("img")
-    muteIcon.src = this.volumeIconValue || "/assets/volume.svg"
+    muteIcon.src = "/assets/volume.svg"
     muteIcon.dataset.audioPlayerTarget = "muteIcon"
     muteIcon.alt = "Mute"
-    muteBtn.appendChild(muteIcon)
+    muteButton.appendChild(muteIcon)
 
-    controls.appendChild(playBtn)
+    controls.appendChild(playButton)
     controls.appendChild(waveform)
-    controls.appendChild(muteBtn)
+    controls.appendChild(muteButton)
 
     const timeDisplay = document.createElement("div")
     timeDisplay.classList.add("audio-time")
     timeDisplay.dataset.audioPlayerTarget = "timeDisplay"
     timeDisplay.textContent = "0:00"
 
-    audioWrapper.appendChild(audio)
-    audioWrapper.appendChild(controls)
-    audioWrapper.appendChild(timeDisplay)
-    attachmentsEl.appendChild(audioWrapper)
-    messageEl.appendChild(attachmentsEl)
-    messageEl.appendChild(this.createMsgTime())
-    list.appendChild(messageEl)
-
-    this.scrollToBottom()
+    wrapper.appendChild(audio)
+    wrapper.appendChild(controls)
+    wrapper.appendChild(timeDisplay)
+    return wrapper
   }
 
-  appendAttachments(container, attachments) {
-    if (!attachments.length) return
+  buildImageAttachment(url, filename) {
+    const wrapper = document.createElement("div")
+    wrapper.classList.add("msg-attachment-img")
 
-    const attachmentsEl = document.createElement("div")
-    attachmentsEl.classList.add("msg-attachments")
+    const img = document.createElement("img")
+    img.src = url
+    img.classList.add("attachment-image")
+    img.alt = filename || "Image attachment"
+    img.onload = () => this.scrollToBottom()
 
-    attachments.forEach((attachment) => {
-      if (!attachment.url) return
+    wrapper.appendChild(img)
+    return wrapper
+  }
 
-      if (attachment.attachment_type === "audio" || (attachment.content_type || "").startsWith("audio/")) {
-        const audioWrapper = document.createElement("div")
-        audioWrapper.classList.add("msg-attachment-audio")
-        audioWrapper.dataset.controller = "audio-player"
-        audioWrapper.dataset.audioPlayerPlayIconValue = this.playIconValue || "/assets/play.svg"
-        audioWrapper.dataset.audioPlayerPauseIconValue = this.pauseIconValue || "/assets/pause.svg"
-        audioWrapper.dataset.audioPlayerVolumeIconValue = this.volumeIconValue || "/assets/volume.svg"
-        audioWrapper.dataset.audioPlayerMuteIconValue = this.muteIconValue || "/assets/mute.svg"
+  buildFileAttachment(url, filename) {
+    const link = document.createElement("a")
+    link.href = url
+    link.target = "_blank"
+    link.rel = "noopener"
+    link.classList.add("msg-attachment-file")
 
-        const audio = document.createElement("audio")
-        audio.dataset.audioPlayerTarget = "audio"
-        audio.preload = "metadata"
-        audio.src = attachment.url
+    const icon = document.createElement("span")
+    icon.classList.add("file-icon")
+    icon.textContent = "📄"
 
-        const controls = document.createElement("div")
-        controls.classList.add("audio-player-controls")
+    const name = document.createElement("span")
+    name.classList.add("file-name")
+    name.textContent = filename || "Attachment"
 
-        const playBtn = document.createElement("button")
-        playBtn.type = "button"
-        playBtn.classList.add("audio-btn")
-        playBtn.dataset.action = "audio-player#toggle"
-        playBtn.dataset.audioPlayerTarget = "playButton"
+    link.appendChild(icon)
+    link.appendChild(name)
+    return link
+  }
 
-        const playIcon = document.createElement("img")
-        playIcon.src = this.playIconValue || "/assets/play.svg"
-        playIcon.dataset.audioPlayerTarget = "playIcon"
-        playIcon.alt = "Play"
-        playBtn.appendChild(playIcon)
+  appendCableMessageTime(messageEl, message) {
+    const timeEl = document.createElement("div")
+    timeEl.classList.add("msg-time")
 
-        const waveform = document.createElement("div")
-        waveform.classList.add("audio-waveform")
-        waveform.dataset.audioPlayerTarget = "waveform"
+    if (this.isIncomingMessage(message)) {
+      timeEl.textContent = this.formatMessageTime(message.created_at)
+      messageEl.appendChild(timeEl)
+      return
+    }
 
-        const muteBtn = document.createElement("button")
-        muteBtn.type = "button"
-        muteBtn.classList.add("audio-btn", "audio-mute-btn")
-        muteBtn.dataset.action = "audio-player#toggleMute"
-        muteBtn.dataset.audioPlayerTarget = "muteButton"
+    const timeText = document.createElement("span")
+    timeText.textContent = this.formatMessageTime(message.created_at)
+    timeEl.appendChild(timeText)
 
-        const muteIcon = document.createElement("img")
-        muteIcon.src = this.volumeIconValue || "/assets/volume.svg"
-        muteIcon.dataset.audioPlayerTarget = "muteIcon"
-        muteIcon.alt = "Mute"
-        muteBtn.appendChild(muteIcon)
+    const receipt = document.createElement("span")
+    receipt.classList.add("msg-receipt")
+    if (message.status === "read") receipt.classList.add("msg-receipt--read")
+    receipt.textContent = message.status === "sent" ? "✓" : "✓✓"
+    timeEl.appendChild(receipt)
 
-        controls.appendChild(playBtn)
-        controls.appendChild(waveform)
-        controls.appendChild(muteBtn)
+    const replyEl = messageEl.querySelector(".agent-reply")
+    if (replyEl) replyEl.appendChild(timeEl)
+  }
 
-        const timeDisplay = document.createElement("div")
-        timeDisplay.classList.add("audio-time")
-        timeDisplay.dataset.audioPlayerTarget = "timeDisplay"
-        timeDisplay.textContent = "0:00"
+  formatMessageTime(value) {
+    const date = value ? new Date(value) : new Date()
+    if (Number.isNaN(date.getTime())) return ""
 
-        audioWrapper.appendChild(audio)
-        audioWrapper.appendChild(controls)
-        audioWrapper.appendChild(timeDisplay)
-        attachmentsEl.appendChild(audioWrapper)
-      } else if (attachment.attachment_type === "image" || (attachment.content_type || "").startsWith("image/")) {
-        const wrapper = document.createElement("div")
-        wrapper.classList.add("msg-attachment-img")
-
-        const img = document.createElement("img")
-        img.src = attachment.url
-        img.classList.add("attachment-image")
-        img.alt = attachment.filename || "Image attachment"
-        img.onload = () => this.scrollToBottom()
-
-        wrapper.appendChild(img)
-        attachmentsEl.appendChild(wrapper)
-      } else {
-        const link = document.createElement("a")
-        link.href = attachment.url
-        link.target = "_blank"
-        link.rel = "noopener"
-        link.classList.add("msg-attachment-file")
-
-        const icon = document.createElement("span")
-        icon.classList.add("file-icon")
-        icon.textContent = "📄"
-
-        const name = document.createElement("span")
-        name.classList.add("file-name")
-        name.textContent = attachment.filename || "Attachment"
-
-        link.appendChild(icon)
-        link.appendChild(name)
-        attachmentsEl.appendChild(link)
-      }
+    return date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
     })
+  }
 
-    if (attachmentsEl.childElementCount) container.appendChild(attachmentsEl)
+  isSingleEmojiMessage(content) {
+    const text = this.stripHtml(content).trim()
+    if (!text) return false
+
+    const segmenter = typeof Intl !== "undefined" && Intl.Segmenter ? new Intl.Segmenter(undefined, { granularity: "grapheme" }) : null
+    const clusters = segmenter ? Array.from(segmenter.segment(text)) : Array.from(text)
+    return clusters.length === 1 && /\p{Emoji}/u.test(text)
+  }
+
+  messageRenderedCorrectly(messageId) {
+    const messageEl = document.getElementById(`message_${messageId}`)
+    return this.isWidgetMessageElement(messageEl)
+  }
+
+  isWidgetMessageElement(messageEl) {
+    return !!messageEl && (messageEl.classList.contains("agent-msg") || messageEl.classList.contains("client-reply"))
   }
 
   setupImagePreview() {
@@ -587,8 +612,25 @@ export default class extends Controller {
   }
 
   setSearching(isLoading) {
-    const helpSection = this.element.closest(".help-section") || this.element
-    helpSection.classList.toggle("is-searching", isLoading)
+    const results = document.getElementById("help-results")
+    if (results) results.classList.toggle("is-searching", isLoading)
+  }
+
+  setSearchActive(isActive) {
+    const sheet = this.element.closest(".homepage")?.querySelector(".widget-content-sheet")
+    if (sheet) sheet.classList.toggle("is-search-active", isActive)
+  }
+
+  showResolvedConversationMessage(event) {
+    const row = event.currentTarget.closest(".widget-conv-row")
+    const message = row?.querySelector(".widget-resolved-message")
+    if (!message) return
+
+    message.hidden = false
+    clearTimeout(message._hideTimer)
+    message._hideTimer = setTimeout(() => {
+      message.hidden = true
+    }, 4000)
   }
 
   // --- Communication with parent frame ---
@@ -612,25 +654,6 @@ export default class extends Controller {
   }
 
   // --- Utilities ---
-  escapeHtml(text) {
-    const div = document.createElement("div")
-    div.textContent = text
-    return div.innerHTML
-  }
-
-  isSingleEmojiMessage(content) {
-    const text = (content || "").trim()
-    if (!text) return false
-
-    const segments = typeof Intl !== "undefined" && Intl.Segmenter
-      ? Array.from(new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(text))
-      : Array.from(text)
-    if (segments.length !== 1) return false
-
-    const singleEmojiPattern = /^(?:(?:[\u{1F1E6}-\u{1F1FF}]{2})|(?:[0-9#*]\uFE0F?\u20E3)|(?:(?:\p{Emoji_Presentation}|\p{Extended_Pictographic}\uFE0F?)\p{Emoji_Modifier}?(?:\u200D(?:\p{Emoji_Presentation}|\p{Extended_Pictographic}\uFE0F?)\p{Emoji_Modifier}?)*))$/u
-    return singleEmojiPattern.test(text)
-  }
-
   get csrfToken() {
     const meta = document.querySelector("[name='csrf-token']")
     return meta ? meta.content : ""

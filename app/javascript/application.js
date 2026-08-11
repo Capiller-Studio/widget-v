@@ -55,3 +55,13 @@ document.addEventListener("turbo:fetch-request-error", (event) => {
     setWidgetLoading(false)
   }
 })
+
+document.addEventListener("click", (event) => {
+  const closeButton = event.target.closest?.(".widget-close-btn")
+  if (!closeButton) return
+
+  event.preventDefault()
+  if (window.parent !== window) {
+    window.parent.postMessage({ type: "deskbolic:close" }, "*")
+  }
+})
