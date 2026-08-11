@@ -1,17 +1,29 @@
 ko:
   widget:
     home:
-      title: "새로운 채팅을 시작해보세요"
+      title: "오늘 무엇을 도와드릴까요?"
       team: "팀!"
-      subheading: "고객과의 연결을 통해 비즈니스 성장을 도와드립니다."
+      subheading: "보통 몇 분 안에 답변드립니다."
+      greeting: "안녕하세요 👋"
       start_conversation: "대화 시작하기"
+      chat_with_team: "팀과 채팅하기"
+      browse_articles: "도움말 문서 찾아보기"
+      browse_articles_sub: "자주 묻는 질문의 답변을 찾아보세요"
+      search_placeholder: "도움말 검색..."
+      need_help: "아직 도움이 필요하신가요?"
+      contact_support_sub: "지원팀에 문의하세요"
+      contact_support: "지원팀 문의"
       reply_time: "일반적인 응답 시간"
       reply_time_unit: "몇 분"
     conversations:
       title: "대화"
+      subtitle: "모든 대화를 한곳에서 확인하세요."
       messages: "메시지"
       new_conversation: "대화 시작하기"
       no_conversations: "아직 대화가 없습니다."
+      search_placeholder: "대화 검색..."
+      resolved: "해결됨"
+      resolved_message: "대화가 해결되었습니다. 새 대화를 시작해 주세요."
     footer:
       home: "홈"
       conversations: "대화"
@@ -19,6 +31,8 @@ ko:
     chat:
       placeholder: "메시지를 입력하세요..."
       typing: "입력 중..."
+      online: "온라인"
+      today: "오늘"
     editor:
       placeholder: "메시지를 입력하세요…"
       emoji: "이모지"
@@ -38,8 +52,24 @@ ko:
       submit: "채팅 시작"
     help_center:
       title: "도움말 센터"
+      subtitle: "궁금한 점에 대한 답변을 찾아보세요"
       search_placeholder: "문서 검색..."
-      no_results: "검색 결과가 없습니다."
+      no_results: "문서를 찾을 수 없습니다."
+      untitled: "제목 없음"
+      article_count:
+        one: "%{count}개 문서"
+        other: "%{count}개 문서"
+      browse_categories: "카테고리별 찾아보기"
+      view_all: "전체 보기"
+      category_subtitle: "이 카테고리의 문서를 찾아보세요"
+      all_articles: "모든 문서"
+      sort_popular: "인기순"
+      sort_recent: "최신순"
+      updated_ago: "%{days}일 전에 업데이트됨"
+      no_content: "이 문서에는 아직 내용이 없습니다."
+      helpful_question: "이 문서가 도움이 되었나요?"
+      yes: "예"
+      no: "아니요"
   contact_form:
     success_title: "메시지 전송 완료!"
     send_message: "메시지 보내기"

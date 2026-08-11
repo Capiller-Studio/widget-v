@@ -1,13 +1,10 @@
 - if message.incoming?
-  .client-reply class="#{'single-emoji-message' if single_emoji_message?(message.content)}"
+  .client-reply id=dom_id(message) class="#{'single-emoji-message' if single_emoji_message?(message.content)}"
     - if message.content.present?
       = message.content
     - if message.attachments.any?
       .msg-attachments
         - message.attachments.each do |attachment|
-          / - if attachment.audio? && attachment.file.attached?
-          /   .msg-attachment-audio
-          /     audio controls=true preload="metadata" src=rails_blob_path(attachment.file)
           - if attachment.audio? && attachment.file.attached?
             .msg-attachment-audio data-controller="audio-player" data-audio-player-play-icon-value=asset_path("play.svg") data-audio-player-pause-icon-value=asset_path("pause.svg") data-audio-player-volume-icon-value=asset_path("volume.svg") data-audio-player-mute-icon-value=asset_path("mute.svg")
               audio data-audio-player-target="audio" preload="metadata" src=rails_blob_path(attachment.file)
@@ -27,21 +24,13 @@
               span.file-name = attachment.file.filename
     .msg-time = message.created_at.strftime("%I:%M %p")
 - else
-  .agent-msg
-    / - if message.sender.is_a?(User) && message.sender.avatar.attached?
-    /   = image_tag(message.sender.avatar.variant(:thumb), class: "person-img")
-    / - else
-    /   .person-img.avatar-placeholder class=avatar_fallback_color_class(message.sender.display_name || message.sender.first_name || message.sender.email)
-    /     = message.sender.try(:display_name)&.first&.upcase || "A"
+  .agent-msg id=dom_id(message)
     .agent-reply class="#{'single-emoji-message' if single_emoji_message?(sanitize(message.content, tags: %w(p b i em strong s strike span code pre ul ol li br a), attributes: %w(class style href target rel dir spellcheck value)))}"
       - if message.content.present?
         = single_emoji_message?(sanitize(message.content, tags: %w(p b i em strong s strike span code pre ul ol li br a), attributes: %w(class style href target rel dir spellcheck value))) ? strip_tags(message.content).strip : sanitize(message.content, tags: %w(p b i em strong s strike span code pre ul ol li br a), attributes: %w(class style href target rel dir spellcheck value))
       - if message.attachments.any?
         .msg-attachments
           - message.attachments.each do |attachment|
-            / - if attachment.audio? && attachment.file.attached?
-            /   .msg-attachment-audio
-            /     audio controls=true preload="metadata" src=rails_blob_path(attachment.file)
             - if attachment.audio? && attachment.file.attached?
               .msg-attachment-audio data-controller="audio-player" data-audio-player-play-icon-value=asset_path("play.svg") data-audio-player-pause-icon-value=asset_path("pause.svg") data-audio-player-volume-icon-value=asset_path("volume.svg") data-audio-player-mute-icon-value=asset_path("mute.svg")
                 audio data-audio-player-target="audio" preload="metadata" src=rails_blob_path(attachment.file)
@@ -59,5 +48,11 @@
               a.msg-attachment-file href=rails_blob_path(attachment.file, disposition: "attachment") target="_blank"
                 span.file-icon 📄
                 span.file-name = attachment.file.filename
-      .msg-time = message.created_at.strftime("%I:%M %p")
-
+      .msg-time
+        span = message.created_at.strftime("%I:%M %p")
+        - if message.read?
+          span.msg-receipt.msg-receipt--read ✓✓
+        - elsif message.delivered?
+          span.msg-receipt ✓✓
+        - else
+          span.msg-receipt ✓

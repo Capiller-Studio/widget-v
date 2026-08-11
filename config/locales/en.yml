@@ -1,17 +1,29 @@
 en:
   widget:
     home:
-      title: "Let's start a new chat with our"
+      title: "How can we help you today?"
       team: "team!"
-      subheading: "We help your business grow by connecting you to your customers."
+      subheading: "We usually reply within a few minutes."
+      greeting: "Hi there 👋"
       start_conversation: "Start a conversation"
+      chat_with_team: "Chat with our team"
+      browse_articles: "Browse help articles"
+      browse_articles_sub: "Find answers to common questions"
+      search_placeholder: "Search for help..."
+      need_help: "Still need help?"
+      contact_support_sub: "Contact our support team"
+      contact_support: "Contact Support"
       reply_time: "Our usual reply time"
       reply_time_unit: "A few minutes"
     conversations:
       title: "Conversations"
+      subtitle: "All your conversations in one place."
       messages: "Messages"
       new_conversation: "Start a conversation"
       no_conversations: "No conversations yet."
+      search_placeholder: "Search conversations..."
+      resolved: "Resolved"
+      resolved_message: "Conversation resolved, please start a new conversation."
     footer:
       home: "Home"
       conversations: "Conversations"
@@ -19,6 +31,8 @@ en:
     chat:
       placeholder: "Type a message..."
       typing: "is typing..."
+      online: "Online"
+      today: "Today"
     editor:
       placeholder: "Type a message…"
       emoji: "Emoji"
@@ -38,8 +52,24 @@ en:
       submit: "Start Chat"
     help_center:
       title: "Help Center"
-      search_placeholder: "Search for articles..."
+      subtitle: "Find answers to your questions"
+      search_placeholder: "Search articles..."
       no_results: "No articles found."
+      untitled: "Untitled"
+      article_count:
+        one: "%{count} article"
+        other: "%{count} articles"
+      browse_categories: "Browse by category"
+      view_all: "View all"
+      category_subtitle: "Browse articles in this category"
+      all_articles: "All articles"
+      sort_popular: "Popular"
+      sort_recent: "Recent"
+      updated_ago: "Updated %{days} days ago"
+      no_content: "This article has no content yet."
+      helpful_question: "Was this article helpful?"
+      yes: "Yes"
+      no: "No"
   contact_form:
     success_title: "Message Sent!"
     send_message: "Send Message"

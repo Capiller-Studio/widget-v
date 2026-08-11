@@ -1,15 +1,17 @@
 .chat-screen
   .homepage
-    .header-1
-      .svg-icons
-        - @agents.each do |agent|
-          - if agent.avatar.attached?
-            = image_tag(agent.avatar.variant(:thumb), class: "person-img")
-          - else
-            .person-img.avatar-placeholder class=avatar_fallback_color_class(agent.display_name || agent.first_name || agent.email)
-              = agent.display_name&.first&.upcase || "A"
-      .header-text = t('widget.conversations.title')
-    .main.main-gradient.main-content
+    .widget-page-header
+      .widget-page-header-text
+        h1 = t('widget.conversations.title')
+        p = t('widget.conversations.subtitle', default: "All your conversations in one place.")
+      / .widget-page-header-actions
+      /   = button_to widget_messages_path(widget_route_params(format: :turbo_stream)), method: :get, class: "widget-new-conv-btn", form: { data: { turbo_stream: true } } do
+      /     = inline_svg_tag("message.svg", class: "theme-svg")
+    .widget-page-search
+      span.widget-page-search-icon
+        = inline_svg_tag("search.svg")
+      input type="text" name="q" placeholder=t('widget.conversations.search_placeholder', default: "Search conversations...")
+    .main.main-content data-controller="widget"
       .conversation-history#conversations-list
         - if @conversations.any?
           = render partial: "widget/conversation_item", collection: @conversations, as: :conversation

@@ -67,12 +67,12 @@
   // --- Container (hidden, no iframe yet) ---
   var container = document.createElement("div");
   container.id = "deskbolic-widget-container";
-  container.style.cssText = "position:fixed;bottom:90px;" + position + ":20px;width:" + WIDGET_WIDTH + ";height:" + WIDGET_HEIGHT + ";max-height:calc(100vh - 93px);border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.15);z-index:2147483647;display:none;opacity:0;transform:translateY(10px);transition:opacity 0.3s ease,transform 0.3s ease;";
+  container.style.cssText = "position:fixed;bottom:90px;" + position + ":20px;width:" + WIDGET_WIDTH + ";height:" + WIDGET_HEIGHT + ";max-height:calc(100vh - 93px);border-radius:24px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.15);z-index:2147483647;display:none;opacity:0;transform:translateY(10px);transition:opacity 0.3s ease,transform 0.3s ease;";
 
   // --- Iframe (created WITHOUT src for zero performance impact) ---
   var iframe = document.createElement("iframe");
   iframe.id = "deskbolic-widget-iframe";
-  iframe.style.cssText = "width:100%;height:100%;border:none;border-radius:16px;background:#fff;";
+  iframe.style.cssText = "width:100%;height:100%;border:none;border-radius:24px;background:#fff;";
   iframe.setAttribute("allow", "microphone; camera");
   iframe.title = "Deskbolic Chat Widget";
   // No src set — iframe is an empty shell until first open

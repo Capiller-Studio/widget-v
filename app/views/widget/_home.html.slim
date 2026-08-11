@@ -1,50 +1,65 @@
-.chat-screen 
+.chat-screen.widget-home-page
   .homepage
-    .header-2
-      .logo
-        - if @widget.account&.feature_enabled?(:custom_branding) && @widget.custom_branding? && @widget.logo.attached?
-          = image_tag(@widget.scaled_logo, alt: "Widget Logo", style: "width: 100%; height: 100%; object-fit: contain;")
-        - else
-          = image_tag("logo.png", alt: "deskbolic image")
-      .intro-heading
-        = @widget.welcome_title.presence || t('widget.home.title')
-      .intro-heading-addons
-        .svg-icons
-          - @all_agents.each do |agent|
-            - if agent.avatar.attached?
-              = image_tag(agent.avatar.variant(:thumb), class: "person-img")
-            - else
-              .person-img.avatar-placeholder class=avatar_fallback_color_class(agent.display_name || agent.first_name || agent.email)
-                = agent.display_name&.first&.upcase || "A"
-        .team = t('widget.home.team')
-      .intro-subheading
-        = @widget.welcome_tagline.presence || t('widget.home.subheading')
-    .main 
-      .start-conv
+    .widget-hero
+      .widget-hero-top
+        .widget-logo-badge
+          = widget_launcher_icon_tag(@widget, alt: "Widget Icon")
+        button.widget-close-btn type="button" aria-label="Close"
+          | ×
+      .widget-hero-content
+        .widget-greeting = t('widget.home.greeting', default: "Hi there 👋")
+        h1.widget-hero-title = @widget.welcome_title.presence || t('widget.home.title')
+        p.widget-hero-subtitle = @widget.welcome_tagline.presence || t('widget.home.subheading')
+      .widget-hero-search
+        = form_with url: widget_search_path(widget_route_params), method: :get, local: true, class: "widget-search-form", data: { controller: "widget", action: "submit->widget#submitSearch" } do
+          = text_field_tag :q, nil, class: "widget-search-input", placeholder: t('widget.home.search_placeholder', default: "Search for help..."), data: { action: "input->widget#search", url: widget_search_path(widget_route_params(format: :turbo_stream)) }
+          span.widget-search-icon
+            = inline_svg_tag("search.svg")
+
+    .widget-content-sheet
+      #help-results
+      .widget-start-conv-row
         - if @is_offline
-          .heading = t('widget.home.offline_heading', default: "We're currently offline")
-          .sub-heading
-            .reply-time style="margin-left: 0; padding-left: 0; border: none;"
-              = t('widget.home.offline_subheading', default: "Leave a message and we'll get back to you soon.")
-          = button_to widget_messages_path(widget_route_params(format: :turbo_stream)), method: :get, class: "start-conv-btn", form: { data: { turbo_stream: true } } do
-            p = t('widget.home.leave_message', default: "Leave a Message")
-            = inline_svg_tag("send.svg")
+          = button_to widget_messages_path(widget_route_params(format: :turbo_stream)), method: :get, class: "widget-start-conv-link", form: { data: { turbo_stream: true } } do
+            .widget-icon-chip.widget-icon-chip--brand
+              = widget_conversation_icon_tag(@widget, class: "widget-launcher-img", alt: t('widget.home.offline_heading', default: "We're currently offline"))
+            .widget-start-conv-copy
+              strong = t('widget.home.offline_heading', default: "We're currently offline")
+              small = t('widget.home.offline_subheading', default: "Leave a message and we'll get back to you soon.")
+            .widget-chevron ›
         - else
-          .heading = t('widget.home.start_conversation')
-          .sub-heading
-            .svg-icons
-              - @all_agents.each do |agent|
-                - if agent.avatar.attached?
-                  = image_tag(agent.avatar.variant(:thumb), class: "person-img")
-                - else
-                  .person-img.avatar-placeholder class=avatar_fallback_color_class(agent.display_name || agent.first_name || agent.email)
-                    = agent.display_name&.first&.upcase || "A"
-            .reply-time
-              = @widget.reply_time_text.presence || t('widget.home.reply_time')
-              .time
-                = inline_svg_tag("message.svg", class: "theme-svg")
-                = t('widget.home.reply_time_unit')
-          = button_to widget_messages_path(widget_route_params(format: :turbo_stream)), method: :get, class: "start-conv-btn", form: { data: { turbo_stream: true } } do
-            p = t('widget.home.start_conversation')
-            = inline_svg_tag("send.svg")
+          = button_to widget_messages_path(widget_route_params(format: :turbo_stream)), method: :get, class: "widget-start-conv-link", form: { data: { turbo_stream: true } } do
+            .widget-icon-chip.widget-icon-chip--brand
+              = widget_conversation_icon_tag(@widget, class: "widget-launcher-img", alt: t('widget.home.start_conversation'))
+            .widget-start-conv-text
+              .widget-start-conv-title = t('widget.home.start_conversation')
+              small = t('widget.home.chat_with_team', default: "Chat with our team")
+            .widget-chevron ›
+
+      - if @widget.help_center_enabled?
+        .widget-section-header
+          h2 = t('widget.home.browse_articles', default: "Browse help articles")
+          p = t('widget.home.browse_articles_sub', default: "Find answers to common questions")
+        .widget-category-list
+          - @categories.each do |category|
+            = link_to widget_help_category_path(widget_route_params(category_id: category.id, format: :turbo_stream)), class: "widget-category-row", data: { turbo_stream: true } do
+              .widget-icon-chip.widget-icon-chip--brand
+                = category_icon_svg(category)
+              .widget-category-row-text
+                .widget-category-name = category.name.presence || t('widget.help_center.untitled', default: "Untitled")
+                - article_count = category_article_count(category)
+                .widget-category-count = t('widget.help_center.article_count', count: article_count, default: "#{article_count} articles")
+              .widget-chevron ›
+
+        .widget-support-callout.widget-help-callout
+          .widget-help-callout-text
+            strong = t('widget.home.need_help', default: "Still need help?")
+            small = t('widget.home.contact_support_sub', default: "Contact our support team")
+            = link_to widget_messages_path(widget_route_params(format: :turbo_stream)), class: "widget-support-link widget-help-callout-link", data: { turbo_stream: true } do
+              span = t('widget.home.contact_support', default: "Contact Support")
+              span.widget-help-callout-chevron ›
+          .widget-help-callout-icon
+            = image_tag("human.png", alt: "")
+        = render "widget/custom_footer_text"
+
     = render("footer", active: { home: "active" })

@@ -1,17 +1,46 @@
-.chat-screen
+.chat-screen.widget-help-center-page
   .homepage
-    .header-1 style="padding-left: 0px;"
-      .header-text style="margin: auto;" = t('widget.help_center.title')
-    .main.main-gradient
-      .help-section data-controller="widget"
-        .search-bar
-          input type="text" name="q" placeholder=t('widget.help_center.search_placeholder') data-action="input->widget#search" data-url=widget_search_path(widget_route_params)
-        #help-results
-          - if @categories.any?
-            .articles-col#categories-list
-              = render partial: "widget/category_item", collection: @categories, as: :category
-              = render "widget/categories_pager"
-          - else
-            .empty-state
-              p = t('widget.help_center.no_results')
+    .widget-hero.widget-hero--help
+      .widget-hero-top
+        .widget-logo-badge
+            = widget_launcher_icon_tag(@widget, alt: "Widget Icon")
+        button.widget-close-btn type="button" aria-label="Close"
+          | ×
+      .widget-hero-content
+        h1.widget-hero-title = t('widget.help_center.title')
+        p.widget-hero-subtitle = t('widget.help_center.subtitle', default: "Find answers to your questions")
+      .widget-hero-illustration
+        = inline_svg_tag("help.svg", class: "widget-hero-illustration-icon")
+      .widget-hero-search
+        = form_with url: widget_search_path(widget_route_params), method: :get, local: true, class: "widget-search-form", data: { controller: "widget", action: "submit->widget#submitSearch" } do
+          = text_field_tag :q, nil, class: "widget-search-input", placeholder: t('widget.help_center.search_placeholder'), data: { action: "input->widget#search", url: widget_search_path(widget_route_params(format: :turbo_stream)) }
+          span.widget-search-icon
+            = inline_svg_tag("search.svg")
+
+    .widget-content-sheet
+      #help-results
+      .widget-section-header.widget-section-header--row.widget-help-section-header
+        h2 = t('widget.help_center.browse_categories', default: "Browse by category")
+        = link_to widget_help_center_path(widget_route_params(format: :turbo_stream)), class: "widget-view-all widget-help-view-all", data: { turbo_stream: true } do
+          span.widget-help-view-all-text = t('widget.help_center.view_all', default: "View all")
+          span.widget-help-view-all-chevron ›
+      .widget-category-list#categories-list
+        - if @categories.any?
+          = render partial: "widget/category_item", collection: @categories, as: :category
+          = render "widget/categories_pager"
+        - else
+          .empty-state
+            p = t('widget.help_center.no_results')
+
+      .widget-support-callout.widget-help-callout
+        .widget-help-callout-text
+          strong = t('widget.home.need_help', default: "Still need help?")
+          small = t('widget.home.contact_support_sub', default: "Contact our support team")
+          = link_to widget_messages_path(widget_route_params(format: :turbo_stream)), class: "widget-support-link widget-help-callout-link", data: { turbo_stream: true } do
+            span = t('widget.home.contact_support', default: "Contact Support")
+            span.widget-help-callout-chevron ›
+        .widget-help-callout-icon
+          = image_tag("human.png", alt: "")
+      = render "widget/custom_footer_text"
+
     = render("footer", active: { help: "active" })

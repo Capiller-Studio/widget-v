@@ -14,9 +14,12 @@ class WidgetController < ApplicationController
   before_action :set_agents
   before_action :set_unread_count
 
-  def index; end
+  def index
+    load_home_categories
+  end
 
   def home
+    load_home_categories
     respond_to do |format|
       format.turbo_stream do
         render(turbo_stream: turbo_stream.update("widget", partial: "widget/home"))
@@ -25,7 +28,16 @@ class WidgetController < ApplicationController
   end
 
   def messages
-    if !@customer && !@widget.pre_chat_form_enabled?
+    if pre_chat_required_before_messages?
+      respond_to do |format|
+        format.turbo_stream do
+          render(turbo_stream: turbo_stream.update("widget", partial: "widget/pre_chat_form"))
+        end
+      end
+      return
+    end
+
+    if !@customer && !pre_chat_required?
       if @widget.anonymous_allowed?
         external_id = widget_customer_identifier || "anon-#{SecureRandom.hex(8)}"
         @customer = Customers::CustomerCreator.call(
@@ -41,7 +53,7 @@ class WidgetController < ApplicationController
       end
     end
 
-    if !@customer && @widget.pre_chat_form_enabled?
+    if !@customer && pre_chat_required?
       respond_to do |format|
         format.turbo_stream do
           render(turbo_stream: turbo_stream.update("widget", partial: "widget/pre_chat_form"))
@@ -72,7 +84,7 @@ class WidgetController < ApplicationController
     base_query = if @customer
                    @customer.conversations
                      .where(account: @account, inbox: @inbox)
-                     .includes(last_message: { attachments: { file_attachment: :blob } })
+                     .includes(:assignee, assignee: { avatar_attachment: :blob }, last_message: { attachments: { file_attachment: :blob } })
                      .order(updated_at: :desc)
                  else
                    Conversation.none
@@ -94,8 +106,9 @@ class WidgetController < ApplicationController
     return head :not_found unless @widget.help_center_enabled?
 
     @portal = @widget.portal
-    base_query = @portal ? @portal.categories.active : HelpCenter::Category.none
+    base_query = @portal ? @portal.categories.active.everyone.includes(:translations, image_attachment: :blob) : HelpCenter::Category.none
     @pagy, @categories = pagy(base_query, items: 10)
+    load_category_article_counts(@categories)
 
     respond_to do |format|
       format.turbo_stream do
@@ -112,12 +125,14 @@ class WidgetController < ApplicationController
     return head :not_found unless @widget.help_center_enabled?
 
     @portal = @widget.portal
-    @category = @portal.categories.find(params[:category_id])
+    @category = @portal.categories.includes(:translations).find(params[:category_id])
     
     # Manually query HelpCenter::Article via CategoryResource joins since `has_many :articles` isn't strictly defined on Category
     base_query = HelpCenter::Article.joins(
       "INNER JOIN help_center_category_resources ON help_center_category_resources.resource_id = help_center_articles.id AND help_center_category_resources.resource_type = 'HelpCenter::Article'"
-    ).where(help_center_category_resources: { category_id: @category.id }).published
+    ).where(help_center_category_resources: { category_id: @category.id }).published.includes(:translations)
+
+    @category_stats = category_stats(base_query)
     
     @pagy, @articles = pagy(base_query, items: 10)
     
@@ -135,9 +150,7 @@ class WidgetController < ApplicationController
   def create_message
     return head :unauthorized unless @customer
 
-    @conversation = Channels::WebWidgets::ConversationCreator.call(
-      web_widget_channel: @widget,
-      contact_params: customer_contact_params,
+    @message = create_widget_message(
       content: params[:content],
       attachments: params[:attachments]&.values || [],
       conversation_data: session[:pre_chat_conversation_data] || {}
@@ -146,25 +159,108 @@ class WidgetController < ApplicationController
     # Clear it from session so we don't accidentally reuse it for subsequent conversations
     session.delete(:pre_chat_conversation_data)
 
-    head :ok
+    respond_to do |format|
+      format.turbo_stream do
+        if @message
+          render(turbo_stream: append_widget_message_stream(@message))
+        else
+          head :ok
+        end
+      end
+      format.html { head :ok }
+    end
+  end
+
+  def article
+    return head :not_found unless @widget.help_center_enabled?
+
+    @portal = @widget.portal
+    @category = @portal.categories.includes(:translations).find(params[:category_id])
+    @article = HelpCenter::Article.joins(
+      "INNER JOIN help_center_category_resources ON help_center_category_resources.resource_id = help_center_articles.id AND help_center_category_resources.resource_type = 'HelpCenter::Article'"
+    ).where(help_center_category_resources: { category_id: @category.id }).published.includes(:translations)
+    @article = @article.find(params[:article_id]) rescue (return head :not_found)
+
+    respond_to do |format|
+      format.turbo_stream do
+        render(turbo_stream: turbo_stream.update("widget", partial: "widget/article"))
+      end
+    end
   end
 
   def search
     return head :not_found unless @widget.help_center_enabled?
 
     @portal = @widget.portal
-    @articles = HelpCenter::ArticleSearcher.call(
-      query: params[:q],
-      account: @account,
-      portal: @portal,
-      locale: I18n.locale
-    )
-
-    respond_to do |format|
-      format.turbo_stream do
-        render(turbo_stream: turbo_stream.update("help-results", partial: "widget/search_results"))
-      end
+    @query = (params[:query].presence || params[:q]).to_s.strip
+    @active_tab = params[:tab].to_s == "categories" ? "categories" : "articles"
+    unless @portal
+      @articles = []
+      @categories = []
+      @category_article_counts = {}
+      return render_search_results
     end
+
+    articles_scope = @portal
+      .articles
+      .published
+      .where(visibility: :everyone)
+      .order(Arel.sql("help_center_articles.position ASC NULLS LAST, help_center_articles.updated_at DESC"))
+      .includes(:translations, { categories: [:translations, { image_attachment: :blob }] }, primary_category: [:translations, { image_attachment: :blob }])
+
+    categories_scope = @portal
+      .categories
+      .active
+      .where(visibility: :everyone)
+      .order(Arel.sql("help_center_categories.position ASC NULLS LAST, help_center_categories.updated_at DESC"))
+      .includes(:translations, image_attachment: :blob)
+
+    @articles_page = [params[:page].to_i, 1].max
+    @articles_per_page = 4
+    @articles_visible_count = @articles_page * @articles_per_page
+
+    if @query.present?
+      articles_search = HelpCenter::Article.search(
+        @query,
+        where: {
+          portal_id: @portal.id,
+          status: "published",
+          visibility: "everyone",
+          "translations.locale": I18n.locale.to_s
+        },
+        fields: ["translations.title^5", "translations.content"],
+        match: :word_start,
+        page: 1,
+        per_page: @articles_visible_count
+      )
+
+      categories_search = HelpCenter::Category.search(
+        @query,
+        where: {
+          portal_id: @portal.id,
+          status: "active",
+          visibility: "everyone",
+          "translations.locale": I18n.locale.to_s
+        },
+        fields: ["translations.name^5", "translations.description"],
+        match: :word_start,
+        limit: 5
+      )
+
+      @articles_total_count = articles_search.total_count
+      @articles = preload_records(articles_search, :translations, { categories: [:translations, { image_attachment: :blob }] }, primary_category: [:translations, { image_attachment: :blob }])
+      @categories = preload_records(categories_search, :translations, { image_attachment: :blob })
+    else
+      @articles_total_count = articles_scope.count
+      @articles = articles_scope.limit(@articles_visible_count)
+      @categories = categories_scope.limit(5)
+    end
+
+    @articles_next_page = @articles_page + 1 if @articles_total_count > @articles_visible_count
+    @articles_previous_page = @articles_page - 1 if @articles_page > 1
+    load_category_article_counts(@categories)
+
+    render_search_results
   end
 
   def create_customer
@@ -223,6 +319,7 @@ class WidgetController < ApplicationController
     end
 
     store_customer_in_session
+    mark_pre_chat_completed
     
     session[:pre_chat_conversation_data] = conversation_data
 
@@ -252,6 +349,153 @@ class WidgetController < ApplicationController
 
   private
 
+  def append_widget_message_stream(message)
+    turbo_stream.append("messages-list", partial: "widget/message", locals: { message: message })
+  end
+
+  def create_widget_message(content:, attachments:, conversation_data:)
+    ShardRecord.transaction do
+      @conversation = widget_message_conversation(conversation_data)
+      @conversation.conversation_members.find_or_create_by!(conversation: @conversation, member: @customer, account: @account)
+
+      message = Channels::WebWidgets::MessageCreator.call(
+        account: @account,
+        inbox: @inbox,
+        conversation: @conversation,
+        sender: @customer,
+        content: content,
+        attachments: attachments
+      )
+
+      preload_records([message], :sender, attachments: { file_attachment: :blob }).first
+    end
+  end
+
+  def widget_message_conversation(conversation_data)
+    reusable_conversation = reusable_widget_conversation(@conversation || latest_customer_conversation)
+    return reusable_conversation if reusable_conversation
+
+    conversation_data = conversation_data.to_h.with_indifferent_access
+    @account.conversations.create!(
+      inbox: @inbox,
+      source: :web_widget,
+      title: conversation_data[:title],
+      priority: conversation_data[:priority].presence || "medium",
+      data: conversation_data[:data] || {},
+      locale: customer_contact_params[:locale],
+      outbound_channel: @widget.fallback_channel
+    )
+  end
+
+  def latest_customer_conversation
+    @customer.conversations.where(inbox: @inbox, account: @account).order(created_at: :desc).first
+  end
+
+  def reusable_widget_conversation(conversation)
+    return unless conversation
+
+    if conversation.resolved?
+      return unless widget_reopen_window_active?(conversation)
+
+      conversation.update!(status: :active)
+    end
+
+    conversation
+  end
+
+  def widget_reopen_window_active?(conversation)
+    return false if @inbox.reopen_window_seconds.to_i == 0
+    return false if conversation.status_changed_at.blank?
+
+    (Time.current - conversation.status_changed_at).to_i <= @inbox.reopen_window_seconds
+  end
+
+  def pre_chat_required?
+    @widget.pre_chat_form_enabled? || @widget.pre_chat_form.present?
+  end
+
+  def pre_chat_required_before_messages?
+    pre_chat_required? &&
+      params[:conversation_id].blank? &&
+      !pre_chat_completed?
+  end
+
+  def pre_chat_completed?
+    session[:pre_chat_completed_widget_id].to_s == @widget.id.to_s
+  end
+
+  def mark_pre_chat_completed
+    session[:pre_chat_completed_widget_id] = @widget.id
+  end
+
+  def render_search_results
+    respond_to do |format|
+      format.turbo_stream do
+        render(turbo_stream: turbo_stream.update("help-results", partial: "widget/search_results"))
+      end
+      format.html do
+        render(partial: "widget/search_results", layout: false)
+      end
+    end
+  end
+
+  def load_category_article_counts(categories)
+    category_ids = Array(categories).map(&:id)
+    @category_article_counts = {}
+    return if category_ids.blank?
+
+    @category_article_counts = HelpCenter::CategoryResource
+      .joins("INNER JOIN help_center_articles ON help_center_articles.id = help_center_category_resources.resource_id AND help_center_category_resources.resource_type = 'HelpCenter::Article'")
+      .where(category_id: category_ids)
+      .where(help_center_articles: { status: HelpCenter::Article.statuses[:published], visibility: HelpCenter::Article.visibilities[:everyone] })
+      .group(:category_id)
+      .count
+  end
+
+  def preload_records(records, *associations)
+    return records if records.blank?
+    return records.includes(*associations) if records.respond_to?(:includes)
+
+    ActiveRecord::Associations::Preloader.new(records: records, associations: associations).call
+    records
+  rescue ArgumentError
+    ActiveRecord::Associations::Preloader.new.preload(records, associations)
+    records
+  end
+
+  def category_stats(articles)
+    article_count = articles.count
+    views_count = articles.sum(:views_count)
+    avg_read_minutes = average_read_minutes(articles)
+
+    {
+      articles: article_count,
+      views: views_count,
+      avg_read_time: avg_read_minutes
+    }
+  end
+
+  def average_read_minutes(articles)
+    return 0 if articles.blank?
+
+    total_words = articles.sum do |article|
+      ActionView::Base.full_sanitizer.sanitize(article.content.to_s).scan(/\w+/).size
+    end
+
+    average_words = total_words.to_f / articles.size
+    return 0 if average_words.zero?
+
+    (average_words / 200.0).ceil
+  end
+
+  def load_home_categories
+    return unless @widget.help_center_enabled?
+
+    @portal = @widget.portal
+    @categories = @portal ? @portal.categories.active.everyone.includes(:translations, image_attachment: :blob).limit(6) : []
+    load_category_article_counts(@categories)
+  end
+
   def set_sharding_context(&block)
     @account ||= Account.find_by(id: widget_account_id)
 
@@ -264,7 +508,9 @@ class WidgetController < ApplicationController
 
   def set_widget
     @account ||= Account.find(widget_account_id)
-    @widget = Channel::WebWidget.includes(:primary_inbox).find_by!(account: @account, id: widget_id)
+    @widget = Channel::WebWidget
+      .includes(:primary_inbox, :translations, pre_chat_form: [:translations, { custom_fields: :translations }])
+      .find_by!(account: @account, id: widget_id)
     @inbox = @widget.primary_inbox
 
     if @widget&.primary_inbox&.business_hour_group_id.present?

@@ -14,8 +14,9 @@ html
     = favicon_link_tag(image_path("fav_icon.png"))
     = favicon_link_tag(image_path("fav_icon.png"), rel: "apple-touch-icon")
 
-    = stylesheet_link_tag "application", "data-turbo-track": "reload"
-    = javascript_include_tag "application", "data-turbo-track": "reload", type: "module"
+    - widget_asset_version = "20260809-category-icon-theme-v1"
+    link rel="stylesheet" href="#{asset_path('application.css')}?v=#{widget_asset_version}" data-turbo-track="reload"
+    script type="module" src="#{asset_path('application.js')}?v=#{widget_asset_version}" data-turbo-track="reload"
 
     / Dynamic theme from widget or form configurations
     - theme_color = @widget&.theme_color || @form&.theme_color || @form&.ui_configurations&.dig("theme_color") || @form&.configurations&.dig("primary_color")
