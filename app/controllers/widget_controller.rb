@@ -537,7 +537,7 @@ class WidgetController < ApplicationController
     response.headers.delete("X-Frame-Options")
     
     allowed_domains = ["'self'"]
-    allowed_domains << @widget.website_url if @widget.website_url.present?
+    allowed_domains += @widget.allowed_hosts if @widget.allowed_hosts.present?
     
     # Allow rendering in the dashboard for live preview
     if params[:preview] == 'true' && ENV['DESKBOLIC_URL'].present?
