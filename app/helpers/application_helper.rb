@@ -99,17 +99,10 @@ module ApplicationHelper
   end
 
   def category_article_count(category)
-    if defined?(@category_article_counts) && @category_article_counts
-      return @category_article_counts[category.id] || 0
-    end
-
-    category.articles.size
+    category.published_articles_count
   end
 
   def article_read_minutes(article)
-    word_count = strip_tags(article.content.to_s).scan(/\w+/).size
-    return 0 if word_count.zero?
-
-    (word_count / 200.0).ceil
+    (article.stats.to_h["estimated_read_time"] || 1).to_i
   end
 end

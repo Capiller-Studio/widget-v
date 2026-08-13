@@ -15,19 +15,19 @@
         .widget-category-stat-icon
           = inline_svg_tag("article.svg")
         .widget-category-stat-text
-          .widget-category-stat-value = compact_stat_value(@category_stats[:articles])
+          .widget-category-stat-value = compact_stat_value(@category.published_articles_count)
           .widget-category-stat-label = t('widget.help_center.stats_articles', default: "Articles")
       .widget-category-stat
         .widget-category-stat-icon
           = inline_svg_tag("views.svg")
         .widget-category-stat-text
-          .widget-category-stat-value = compact_stat_value(@category_stats[:views])
+          .widget-category-stat-value = compact_stat_value(@category.views_count)
           .widget-category-stat-label = t('widget.help_center.stats_views', default: "Views")
       .widget-category-stat
         .widget-category-stat-icon
           = inline_svg_tag("time.svg")
         .widget-category-stat-text
-          .widget-category-stat-value = t('widget.help_center.stats_read_time_value', count: @category_stats[:avg_read_time], default: "#{@category_stats[:avg_read_time]} min")
+          .widget-category-stat-value = t('widget.help_center.stats_read_time_value', count: (@category.stats.to_h["average_read_time"] || 0), default: "#{(@category.stats.to_h["average_read_time"] || 0)} min")
           .widget-category-stat-label = t('widget.help_center.stats_avg_read_time', default: "Avg. read time")
     .widget-content-sheet
       .widget-section-header.widget-section-header--row
