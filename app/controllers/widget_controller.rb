@@ -108,7 +108,6 @@ class WidgetController < ApplicationController
     @portal = @widget.portal
     base_query = @portal ? @portal.categories.active.everyone.includes(:translations, image_attachment: :blob) : HelpCenter::Category.none
     @pagy, @categories = pagy(base_query, items: 10)
-    load_category_article_counts(@categories)
 
     respond_to do |format|
       format.turbo_stream do
@@ -127,12 +126,7 @@ class WidgetController < ApplicationController
     @portal = @widget.portal
     @category = @portal.categories.includes(:translations).find(params[:category_id])
     
-    # Manually query HelpCenter::Article via CategoryResource joins since `has_many :articles` isn't strictly defined on Category
-    base_query = HelpCenter::Article.joins(
-      "INNER JOIN help_center_category_resources ON help_center_category_resources.resource_id = help_center_articles.id AND help_center_category_resources.resource_type = 'HelpCenter::Article'"
-    ).where(help_center_category_resources: { category_id: @category.id }).published.includes(:translations)
-
-    @category_stats = category_stats(base_query)
+    base_query = @category.articles.published.includes(:translations)
     
     @pagy, @articles = pagy(base_query, items: 10)
     
@@ -176,10 +170,9 @@ class WidgetController < ApplicationController
 
     @portal = @widget.portal
     @category = @portal.categories.includes(:translations).find(params[:category_id])
-    @article = HelpCenter::Article.joins(
-      "INNER JOIN help_center_category_resources ON help_center_category_resources.resource_id = help_center_articles.id AND help_center_category_resources.resource_type = 'HelpCenter::Article'"
-    ).where(help_center_category_resources: { category_id: @category.id }).published.includes(:translations)
-    @article = @article.find(params[:article_id]) rescue (return head :not_found)
+    @article = @category.articles.published.includes(:translations).find_by(id: params[:article_id])
+    
+    return head :not_found unless @article
 
     respond_to do |format|
       format.turbo_stream do
@@ -197,7 +190,6 @@ class WidgetController < ApplicationController
     unless @portal
       @articles = []
       @categories = []
-      @category_article_counts = {}
       return render_search_results
     end
 
@@ -228,6 +220,7 @@ class WidgetController < ApplicationController
           visibility: "everyone",
           "translations.locale": I18n.locale.to_s
         },
+        includes: [:translations, { categories: [:translations, { image_attachment: :blob }] }, primary_category: [:translations, { image_attachment: :blob }]],
         fields: ["translations.title^5", "translations.content"],
         match: :word_start,
         page: 1,
@@ -242,14 +235,15 @@ class WidgetController < ApplicationController
           visibility: "everyone",
           "translations.locale": I18n.locale.to_s
         },
+        includes: [:translations, { image_attachment: :blob }],
         fields: ["translations.name^5", "translations.description"],
         match: :word_start,
         limit: 5
       )
 
       @articles_total_count = articles_search.total_count
-      @articles = preload_records(articles_search, :translations, { categories: [:translations, { image_attachment: :blob }] }, primary_category: [:translations, { image_attachment: :blob }])
-      @categories = preload_records(categories_search, :translations, { image_attachment: :blob })
+      @articles = articles_search
+      @categories = categories_search
     else
       @articles_total_count = articles_scope.count
       @articles = articles_scope.limit(@articles_visible_count)
@@ -258,7 +252,6 @@ class WidgetController < ApplicationController
 
     @articles_next_page = @articles_page + 1 if @articles_total_count > @articles_visible_count
     @articles_previous_page = @articles_page - 1 if @articles_page > 1
-    load_category_article_counts(@categories)
 
     render_search_results
   end
@@ -367,7 +360,7 @@ class WidgetController < ApplicationController
         attachments: attachments
       )
 
-      preload_records([message], :sender, attachments: { file_attachment: :blob }).first
+      Message.includes(:sender, attachments: { file_attachment: :blob }).find(message.id)
     end
   end
 
@@ -437,55 +430,6 @@ class WidgetController < ApplicationController
         render(partial: "widget/search_results", layout: false)
       end
     end
-  end
-
-  def load_category_article_counts(categories)
-    category_ids = Array(categories).map(&:id)
-    @category_article_counts = {}
-    return if category_ids.blank?
-
-    @category_article_counts = HelpCenter::CategoryResource
-      .joins("INNER JOIN help_center_articles ON help_center_articles.id = help_center_category_resources.resource_id AND help_center_category_resources.resource_type = 'HelpCenter::Article'")
-      .where(category_id: category_ids)
-      .where(help_center_articles: { status: HelpCenter::Article.statuses[:published], visibility: HelpCenter::Article.visibilities[:everyone] })
-      .group(:category_id)
-      .count
-  end
-
-  def preload_records(records, *associations)
-    return records if records.blank?
-    return records.includes(*associations) if records.respond_to?(:includes)
-
-    ActiveRecord::Associations::Preloader.new(records: records, associations: associations).call
-    records
-  rescue ArgumentError
-    ActiveRecord::Associations::Preloader.new.preload(records, associations)
-    records
-  end
-
-  def category_stats(articles)
-    article_count = articles.count
-    views_count = articles.sum(:views_count)
-    avg_read_minutes = average_read_minutes(articles)
-
-    {
-      articles: article_count,
-      views: views_count,
-      avg_read_time: avg_read_minutes
-    }
-  end
-
-  def average_read_minutes(articles)
-    return 0 if articles.blank?
-
-    total_words = articles.sum do |article|
-      ActionView::Base.full_sanitizer.sanitize(article.content.to_s).scan(/\w+/).size
-    end
-
-    average_words = total_words.to_f / articles.size
-    return 0 if average_words.zero?
-
-    (average_words / 200.0).ceil
   end
 
   def load_home_categories
