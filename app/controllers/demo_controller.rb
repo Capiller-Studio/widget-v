@@ -14,7 +14,7 @@ class DemoController < ActionController::Base
     widget = Channel::WebWidget.find_by(account_id: @account_id, id: @widget_id)
 
     if widget.nil?
-      return render plain: "Widget not found. Run Seeds::WebWidgetSeeder.seed first.", status: :not_found
+      return render(plain: "Widget not found. Run Seeds::WebWidgetSeeder.seed first.", status: :not_found)
     end
 
     # Pre-compute HMAC for the test customer so the demo "just works"
@@ -31,7 +31,7 @@ class DemoController < ActionController::Base
     form = Channel::ContactForm.find_by(account_id: @account_id, id: @form_id)
 
     if form.nil?
-      return render plain: "Contact Form not found. Run seeds or create one first.", status: :not_found
+      return render(plain: "Contact Form not found. Run seeds or create one first.", status: :not_found)
     end
 
     @identifier = "test-customer-001"

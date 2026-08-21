@@ -13,12 +13,12 @@ Rails.application.config.middleware.insert_before 0, Rack::Cors do
 
     resource "/*/embed.js",
              headers: :any,
-             methods: [:get],
+             methods: [ :get ],
              max_age: 3600
 
     resource "/cable",
              headers: :any,
-             methods: [:get, :post],
+             methods: [ :get, :post ],
              max_age: 600
   end
 end
