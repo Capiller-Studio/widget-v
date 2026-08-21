@@ -22,7 +22,7 @@ class EmbedController < ApplicationController
     response.headers["Cache-Control"] = "public, max-age=3600, s-maxage=86400"
     response.headers["X-Content-Type-Options"] = "nosniff"
 
-    render layout: false
+    render(layout: false)
   end
 
   def show_form
@@ -36,6 +36,6 @@ class EmbedController < ApplicationController
     response.headers["Cache-Control"] = "public, max-age=3600, s-maxage=86400"
     response.headers["X-Content-Type-Options"] = "nosniff"
 
-    render layout: false
+    render(layout: false)
   end
 end

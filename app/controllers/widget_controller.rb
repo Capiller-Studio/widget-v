@@ -49,7 +49,7 @@ class WidgetController < ApplicationController
         @customer_inbox = @customer&.customer_inboxes&.find_by(inbox: @inbox)
         store_customer_in_session
       else
-        return render plain: "Anonymous chat is disabled.", status: :unauthorized
+        return render(plain: "Anonymous chat is disabled.", status: :unauthorized)
       end
     end
 
@@ -65,7 +65,7 @@ class WidgetController < ApplicationController
     find_or_set_conversation
     messages_query = @conversation&.messages&.global&.includes(:sender, attachments: { file_attachment: :blob })&.order(created_at: :desc) || Message.none
     @pagy, @messages = pagy(messages_query, items: 20)
-    
+
     # We ordered by desc for pagy, so reverse to show in chronological order in UI
     @messages = @messages.reverse
 
@@ -86,9 +86,9 @@ class WidgetController < ApplicationController
                      .where(account: @account, inbox: @inbox)
                      .includes(:assignee, assignee: { avatar_attachment: :blob }, last_message: { attachments: { file_attachment: :blob } })
                      .order(updated_at: :desc)
-                 else
+    else
                    Conversation.none
-                 end
+    end
     @pagy, @conversations = pagy(base_query, items: 10)
 
     respond_to do |format|
@@ -103,7 +103,7 @@ class WidgetController < ApplicationController
   end
 
   def help
-    return head :not_found unless @widget.help_center_enabled?
+    return head(:not_found) unless @widget.help_center_enabled?
 
     @portal = @widget.portal
     base_query = @portal ? @portal.categories.active.everyone.includes(:translations, image_attachment: :blob) : HelpCenter::Category.none
@@ -121,15 +121,15 @@ class WidgetController < ApplicationController
   end
 
   def category
-    return head :not_found unless @widget.help_center_enabled?
+    return head(:not_found) unless @widget.help_center_enabled?
 
     @portal = @widget.portal
     @category = @portal.categories.includes(:translations).find(params[:category_id])
-    
+
     base_query = @category.articles.published.includes(:translations)
-    
+
     @pagy, @articles = pagy(base_query, items: 10)
-    
+
     respond_to do |format|
       format.turbo_stream do
         if params[:page].present?
@@ -142,14 +142,14 @@ class WidgetController < ApplicationController
   end
 
   def create_message
-    return head :unauthorized unless @customer
+    return head(:unauthorized) unless @customer
 
     @message = create_widget_message(
       content: params[:content],
       attachments: params[:attachments]&.values || [],
       conversation_data: session[:pre_chat_conversation_data] || {}
     )
-    
+
     # Clear it from session so we don't accidentally reuse it for subsequent conversations
     session.delete(:pre_chat_conversation_data)
 
@@ -158,21 +158,21 @@ class WidgetController < ApplicationController
         if @message
           render(turbo_stream: append_widget_message_stream(@message))
         else
-          head :ok
+          head(:ok)
         end
       end
-      format.html { head :ok }
+      format.html { head(:ok) }
     end
   end
 
   def article
-    return head :not_found unless @widget.help_center_enabled?
+    return head(:not_found) unless @widget.help_center_enabled?
 
     @portal = @widget.portal
     @category = @portal.categories.includes(:translations).find(params[:category_id])
     @article = @category.articles.published.includes(:translations).find_by(id: params[:article_id])
-    
-    return head :not_found unless @article
+
+    return head(:not_found) unless @article
 
     respond_to do |format|
       format.turbo_stream do
@@ -182,7 +182,7 @@ class WidgetController < ApplicationController
   end
 
   def search
-    return head :not_found unless @widget.help_center_enabled?
+    return head(:not_found) unless @widget.help_center_enabled?
 
     @portal = @widget.portal
     @query = (params[:query].presence || params[:q]).to_s.strip
@@ -198,7 +198,7 @@ class WidgetController < ApplicationController
       .published
       .where(visibility: :everyone)
       .order(Arel.sql("help_center_articles.position ASC NULLS LAST, help_center_articles.updated_at DESC"))
-      .includes(:translations, { categories: [:translations, { image_attachment: :blob }] }, primary_category: [:translations, { image_attachment: :blob }])
+      .includes(:translations, { categories: [ :translations, { image_attachment: :blob } ] }, primary_category: [ :translations, { image_attachment: :blob } ])
 
     categories_scope = @portal
       .categories
@@ -207,7 +207,7 @@ class WidgetController < ApplicationController
       .order(Arel.sql("help_center_categories.position ASC NULLS LAST, help_center_categories.updated_at DESC"))
       .includes(:translations, image_attachment: :blob)
 
-    @articles_page = [params[:page].to_i, 1].max
+    @articles_page = [ params[:page].to_i, 1 ].max
     @articles_per_page = 4
     @articles_visible_count = @articles_page * @articles_per_page
 
@@ -220,8 +220,8 @@ class WidgetController < ApplicationController
           visibility: "everyone",
           "translations.locale": I18n.locale.to_s
         },
-        includes: [:translations, { categories: [:translations, { image_attachment: :blob }] }, primary_category: [:translations, { image_attachment: :blob }]],
-        fields: ["translations.title^5", "translations.content"],
+        includes: [ :translations, { categories: [ :translations, { image_attachment: :blob } ] }, primary_category: [ :translations, { image_attachment: :blob } ] ],
+        fields: [ "translations.title^5", "translations.content" ],
         match: :word_start,
         page: 1,
         per_page: @articles_visible_count
@@ -235,8 +235,8 @@ class WidgetController < ApplicationController
           visibility: "everyone",
           "translations.locale": I18n.locale.to_s
         },
-        includes: [:translations, { image_attachment: :blob }],
-        fields: ["translations.name^5", "translations.description"],
+        includes: [ :translations, { image_attachment: :blob } ],
+        fields: [ "translations.name^5", "translations.description" ],
         match: :word_start,
         limit: 5
       )
@@ -262,7 +262,7 @@ class WidgetController < ApplicationController
       name: params[:name],
       data: {}
     }
-    
+
     conversation_data = { title: nil, priority: nil, data: {} }
     message_content = nil
 
@@ -298,14 +298,14 @@ class WidgetController < ApplicationController
       email: customer_data[:email],
       params: {
         name: customer_data[:name],
-        first_name: customer_data[:first_name] || customer_data[:name]&.split(" ")&.first,
-        last_name: customer_data[:last_name] || customer_data[:name]&.split(" ")&.drop(1)&.join(" "),
+        first_name: customer_data[:first_name] || customer_data[:name]&.split&.first,
+        last_name: customer_data[:last_name] || customer_data[:name]&.split&.drop(1)&.join(" "),
         locale: I18n.locale
       }
     )
 
     @customer_inbox = @customer&.customer_inboxes&.find_by(inbox: @inbox)
-    
+
     if @customer && customer_data[:data].present?
       @customer.data = @customer.data.merge(customer_data[:data])
       @customer.save
@@ -313,7 +313,7 @@ class WidgetController < ApplicationController
 
     store_customer_in_session
     mark_pre_chat_completed
-    
+
     session[:pre_chat_conversation_data] = conversation_data
 
     # If they mapped message.content, create the conversation and message immediately
@@ -336,7 +336,7 @@ class WidgetController < ApplicationController
       format.turbo_stream do
         render(turbo_stream: turbo_stream.update("widget", partial: "widget/messages"))
       end
-      format.html { redirect_to widget_messages_path(widget_route_params) }
+      format.html { redirect_to(widget_messages_path(widget_route_params)) }
     end
   end
 
@@ -440,11 +440,11 @@ class WidgetController < ApplicationController
     load_category_article_counts(@categories)
   end
 
-  def set_sharding_context(&block)
+  def set_sharding_context(&)
     @account ||= Account.find_by(id: widget_account_id)
 
     if @account
-      @account.with_shard(&block)
+      @account.with_shard(&)
     else
       yield
     end
@@ -453,7 +453,7 @@ class WidgetController < ApplicationController
   def set_widget
     @account ||= Account.find(widget_account_id)
     @widget = Channel::WebWidget
-      .includes(:primary_inbox, :translations, pre_chat_form: [:translations, { custom_fields: :translations }])
+      .includes(:primary_inbox, :translations, pre_chat_form: [ :translations, { custom_fields: :translations } ])
       .find_by!(account: @account, id: widget_id)
     @inbox = @widget.primary_inbox
 
@@ -473,21 +473,21 @@ class WidgetController < ApplicationController
     session[:account_id] = @account.id
     session[:widget_id] = @widget.id
   rescue ActiveRecord::RecordNotFound
-    render plain: "Widget not found", status: :not_found
+    render(plain: "Widget not found", status: :not_found)
   end
 
   def set_frame_ancestors
     # Remove Rails default X-Frame-Options to allow embedding
     response.headers.delete("X-Frame-Options")
-    
-    allowed_domains = ["'self'"]
+
+    allowed_domains = [ "'self'" ]
     allowed_domains += @widget.allowed_hosts if @widget.allowed_hosts.present?
-    
+
     # Allow rendering in the dashboard for live preview
-    if params[:preview] == 'true' && ENV['DESKBOLIC_URL'].present?
-      allowed_domains << ENV['DESKBOLIC_URL']
+    if params[:preview] == "true" && ENV["DESKBOLIC_URL"].present?
+      allowed_domains << ENV.fetch("DESKBOLIC_URL", nil)
     end
-    
+
     response.headers["Content-Security-Policy"] = "frame-ancestors #{allowed_domains.join(' ')}"
   end
 
@@ -497,7 +497,7 @@ class WidgetController < ApplicationController
 
     @all_agents = @inbox.users.includes(avatar_attachment: :blob).limit(3)
 
-    @agents = assignee ? [assignee] : @all_agents
+    @agents = assignee ? [ assignee ] : @all_agents
   end
 
   def identify_customer
@@ -505,7 +505,7 @@ class WidgetController < ApplicationController
     return if @customer
 
     if @widget.secure_identity_enforced? && params[:identifier].blank?
-      return render json: { error: "HMAC Identity is required" }, status: :unauthorized
+      return render(json: { error: "HMAC Identity is required" }, status: :unauthorized)
     end
 
     if params[:identifier].present?
@@ -514,11 +514,11 @@ class WidgetController < ApplicationController
         identifier: params[:identifier],
         signature: params[:signature]
       )
-        return render json: { error: "Invalid signature" }, status: :unauthorized
+        return render(json: { error: "Invalid signature" }, status: :unauthorized)
       end
 
       create_or_restore_customer(params[:identifier])
-      return
+      nil
     end
   end
 
@@ -570,7 +570,7 @@ class WidgetController < ApplicationController
   def restore_customer
     customer_session_token = params[:customer_session_token].presence
     customer_session_token ||= session[:customer_session_token] if session[:widget_id] == @widget.id
-    return unless customer_session_token.present?
+    return if customer_session_token.blank?
 
     payload = JwtService.decode(customer_session_token)
     return unless valid_resume_payload?(payload)
