@@ -144,9 +144,17 @@ class WidgetController < ApplicationController
   def create_message
     return head(:unauthorized) unless @customer
 
+    attachments_list = if params[:attachments].is_a?(Array)
+                         params[:attachments]
+                       elsif params[:attachments].respond_to?(:values)
+                         params[:attachments].values
+                       else
+                         []
+                       end
+
     @message = create_widget_message(
       content: params[:content],
-      attachments: params[:attachments]&.values || [],
+      attachments: attachments_list,
       conversation_data: session[:pre_chat_conversation_data] || {}
     )
 
