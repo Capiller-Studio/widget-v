@@ -19,7 +19,7 @@
         h1.widget-hero-title = @article.title.presence || t('widget.help_center.untitled', default: "Untitled")
         .widget-article-meta
           span = "Updated #{time_ago_in_words(@article.updated_at)} ago"
-          span.widget-article-meta-dot ·
+          span.widget-article-meta-dot.widget-article-meta-dot--green ·
           span = t('widget.help_center.read_time_value', count: article_read_minutes(@article), default: "#{article_read_minutes(@article)} min read")
 
     .widget-content-sheet.widget-article-content

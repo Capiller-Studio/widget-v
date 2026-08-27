@@ -1,44 +1,55 @@
 - resolved = conversation.resolved?
+- assignee = conversation.assignee
+- avatar_name = assignee&.display_name || assignee&.first_name || assignee&.email || conversation.title
+- unread_count = conversation.respond_to?(:unread_count) ? conversation.unread_count.to_i : 0
+- unread_count = conversation.unread_messages_count.to_i if unread_count.zero? && conversation.respond_to?(:unread_messages_count)
 - conversation_item_content = capture do
-  .widget-conv-avatar
-    - assignee = conversation.assignee
-    - if assignee&.avatar&.attached?
-      = image_tag(assignee.avatar.variant(:thumb), class: "widget-conv-avatar-img")
-    - else
-      .widget-conv-avatar-img.widget-conv-avatar-placeholder
-        = (assignee&.display_name || assignee&.first_name || "A")&.first&.upcase
-    span.widget-conv-online-dot
   .widget-conv-body
-    .widget-conv-top
-      .widget-conv-name = conversation.title || "Conversation ##{conversation.identifier.last(4)}"
-      .widget-conv-meta
-        - last_message = conversation.last_message
-        - last_msg_time = last_message&.created_at || conversation.updated_at
-        - if last_msg_time
-          .widget-conv-time
-            - if last_msg_time.today?
-              = last_msg_time.strftime("%l:%M %p").strip
-            - elsif last_msg_time.yesterday?
-              = t('widget.conversations.yesterday', default: 'Yesterday')
-            - elsif last_msg_time > 6.days.ago
-              = last_msg_time.strftime("%A")
-            - else
-              = last_msg_time.strftime("%m/%d/%y")
-    .widget-conv-preview
-      - if last_message&.content.present?
-        = strip_tags(last_message.content.to_s).strip.truncate(40)
-      - elsif last_message&.attachments&.any?
-        - attachment = last_message.attachments.last
-        - if attachment.audio?
-          | 🎵 #{t('widget.voice_message', default: 'Voice message')}
-        - elsif attachment.image?
-          | 📷 #{t('widget.photo', default: 'Photo')}
+    .widget-conv-summary
+      .widget-conv-avatar
+        - if assignee&.avatar&.attached?
+          = image_tag(assignee.avatar.variant(:thumb), class: "widget-conv-avatar-img")
         - else
-          | 📎 #{attachment.file.filename.to_s.truncate(30)}
-      - else
-        = t('widget.conversations.no_messages')
+          .widget-conv-avatar-img.widget-conv-avatar-placeholder.avatar-fallback class=avatar_fallback_color_class(avatar_name)
+            = (avatar_name.presence || "A")&.first&.upcase
+        span.widget-conv-online-dot
+      .widget-conv-content
+        .widget-conv-top
+          .widget-conv-name = conversation.title || "Conversation ##{conversation.identifier.last(4)}"
+          .widget-conv-meta
+            - last_message = conversation.last_message
+            - last_msg_time = last_message&.created_at || conversation.updated_at
+            - if last_msg_time
+              .widget-conv-time
+                - if last_msg_time.today?
+                  = last_msg_time.strftime("%l:%M %p").strip
+                - elsif last_msg_time.yesterday?
+                  = t('widget.conversations.yesterday', default: 'Yesterday')
+                - elsif last_msg_time > 6.days.ago
+                  = last_msg_time.strftime("%A")
+                - else
+                  = last_msg_time.strftime("%m/%d/%y")
+        .widget-conv-preview
+          - if last_message&.content.present?
+            = strip_tags(last_message.content.to_s).strip.truncate(40)
+          - elsif last_message&.attachments&.any?
+            - attachment = last_message.attachments.last
+            - if attachment.audio?
+              | 🎵 #{t('widget.voice_message', default: 'Voice message')}
+            - elsif attachment.image?
+              | 📷 #{t('widget.photo', default: 'Photo')}
+            - else
+              | 📎 #{attachment.file.filename.to_s.truncate(30)}
+          - else
+            = t('widget.conversations.no_messages')
     - if resolved
-      .widget-conv-tag = t('widget.conversations.resolved', default: 'Resolved')
+      .widget-conv-status-row
+        .widget-conv-tag.bg-green
+          span.widget-conv-tag-icon aria-hidden="true"
+            | ✓
+          span = t('widget.conversations.resolved', default: 'Resolved')
+        - if unread_count.positive?
+          .widget-conv-count-badge = unread_count > 9 ? "9+" : unread_count
 
 .widget-conv-row
   - if resolved
