@@ -1,5 +1,5 @@
 = link_to widget_help_article_path(widget_route_params(category_id: @category&.id, article_id: article.id, format: :turbo_stream)), class: "widget-article-row", data: { turbo_stream: true } do
   .widget-article-row-text
-    .widget-article-title = article.title.to_s.split.first(3).join(" ") + ".."
+    .widget-article-title = article.title.presence || t('widget.help_center.untitled', default: "Untitled")
     .widget-article-desc = strip_tags(article.content.to_s).strip
   .widget-chevron ›
