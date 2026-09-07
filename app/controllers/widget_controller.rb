@@ -145,12 +145,12 @@ class WidgetController < ApplicationController
     return head(:unauthorized) unless @customer
 
     attachments_list = if params[:attachments].is_a?(Array)
-                         params[:attachments]
-                       elsif params[:attachments].respond_to?(:values)
-                         params[:attachments].values
-                       else
-                         []
-                       end
+      params[:attachments]
+    elsif params[:attachments].respond_to?(:values)
+      params[:attachments].values
+    else
+      []
+    end
 
     @message = create_widget_message(
       content: params[:content],

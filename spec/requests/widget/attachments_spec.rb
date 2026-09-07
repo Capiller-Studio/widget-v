@@ -34,7 +34,7 @@ RSpec.describe 'Widget::Attachments', type: :request do
           post widget_create_message_path(account_id: account.id, widget_id: widget.id, customer_session_token: token),
                params: {
                  content: 'Check this screenshot',
-                 attachments: [file]
+                 attachments: [ file ]
                },
                headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
         end.to change(Message, :count).by(1)
