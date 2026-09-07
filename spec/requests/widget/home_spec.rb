@@ -41,6 +41,12 @@ RSpec.describe 'Widget::Home', type: :request do
       expect(response.body).to include('Widget not found')
     end
 
+    it 'returns 404 not found when account does not exist' do
+      get widget_root_path(account_id: SecureRandom.uuid, widget_id: widget.id)
+
+      expect(response).to have_http_status(:not_found)
+    end
+
     it 'returns 503 service unavailable when widget primary inbox is missing' do
       account.with_shard do
         widget_without_inbox = create(:channel_web_widget, account: account)

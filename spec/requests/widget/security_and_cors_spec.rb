@@ -7,7 +7,7 @@ RSpec.describe 'Widget::SecurityAndCors', type: :request do
   let(:inbox) { create(:inbox, account: account) }
   let(:widget) do
     account.with_shard do
-      w = create(:channel_web_widget, account: account, allowed_hosts: ['https://example.com', 'https://client.com'])
+      w = create(:channel_web_widget, account: account, allowed_hosts: [ 'https://example.com', 'https://client.com' ])
       inbox.update!(channel: w, primary_inbox: true)
       w
     end
@@ -42,6 +42,55 @@ RSpec.describe 'Widget::SecurityAndCors', type: :request do
 
       expect(response).to have_http_status(:not_found)
       expect(response.body).to include('Widget not found')
+    end
+  end
+
+  describe 'HMAC Secure Identity Verification' do
+    it 'returns 401 when secure identity is enforced and identifier is missing' do
+      account.with_shard do
+        widget.update!(secure_identity_enforced: true)
+
+        get widget_messages_path(account_id: account.id, widget_id: widget.id)
+
+        expect(response).to have_http_status(:unauthorized)
+        expect(response.parsed_body['error']).to eq('HMAC Identity is required')
+      end
+    end
+
+    it 'returns 401 when identifier is present but signature is invalid' do
+      account.with_shard do
+        widget.update!(secure_identity_enforced: true)
+
+        get widget_messages_path(
+          account_id: account.id,
+          widget_id: widget.id,
+          identifier: 'user_123',
+          signature: 'invalid_signature_hex'
+        )
+
+        expect(response).to have_http_status(:unauthorized)
+        expect(response.parsed_body['error']).to eq('Invalid signature')
+      end
+    end
+
+    it 'authenticates visitor when valid HMAC signature is provided' do
+      account.with_shard do
+        widget.update!(secure_identity_enforced: true)
+        identifier = 'user_valid_123'
+        signature = OpenSSL::HMAC.hexdigest('sha256', widget.secret, identifier)
+
+        get widget_messages_path(
+          account_id: account.id,
+          widget_id: widget.id,
+          identifier: identifier,
+          signature: signature,
+          email: 'customer@example.com',
+          name: 'Verified Customer'
+        ), headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+        expect(response).to have_http_status(:ok)
+        expect(session[:customer_id]).to be_present
+      end
     end
   end
 end
