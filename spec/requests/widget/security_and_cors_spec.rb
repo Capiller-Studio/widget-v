@@ -43,6 +43,28 @@ RSpec.describe 'Widget::SecurityAndCors', type: :request do
       expect(response).to have_http_status(:not_found)
       expect(response.body).to include('Widget not found')
     end
+
+    it 'returns 404 when widget belongs to a different account' do
+      other_account = create(:account)
+      get widget_root_path(account_id: other_account.id, widget_id: widget.id)
+
+      expect(response).to have_http_status(:not_found)
+      expect(response.body).to include('Widget not found')
+    end
+  end
+
+  describe 'Anonymous Chat Restrictions' do
+    it 'rejects unauthenticated visitor when anonymous chat is disabled' do
+      account.with_shard do
+        widget.update!(flags: 0) # anonymous_allowed = false
+
+        get widget_messages_path(account_id: account.id, widget_id: widget.id),
+            headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+        expect(response).to have_http_status(:unauthorized)
+        expect(response.body).to include('Anonymous chat is disabled.')
+      end
+    end
   end
 
   describe 'HMAC Secure Identity Verification' do

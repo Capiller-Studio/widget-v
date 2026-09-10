@@ -48,5 +48,18 @@ RSpec.describe 'Widget::Conversations', type: :request do
         expect(response.body).to include('turbo-stream action="update" target="widget"')
       end
     end
+
+    it 'ignores invalid or corrupted token and continues execution gracefully' do
+      account.with_shard do
+        get widget_conversations_path(
+          account_id: account.id,
+          widget_id: widget.id,
+          customer_session_token: 'corrupted_or_invalid_jwt_token'
+        ), headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include('turbo-stream')
+      end
+    end
   end
 end

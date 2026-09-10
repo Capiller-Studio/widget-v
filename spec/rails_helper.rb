@@ -8,6 +8,8 @@ ENV['HELPBOLIC_URL'] ||= 'https://helpbolic.com'
 require_relative '../config/environment'
 abort('The Rails environment is running in production mode!') if Rails.env.production?
 require 'rspec/rails'
+require 'capybara/rspec'
+require 'capybara/rails'
 require 'shoulda/matchers'
 require 'database_cleaner/active_record'
 require 'factory_bot_rails'
@@ -32,6 +34,11 @@ Shoulda::Matchers.configure do |config|
     with.library :rails
   end
 end
+
+Capybara.default_driver = :rack_test
+Capybara.javascript_driver = :selenium_chrome_headless
+Capybara.default_host = 'http://localhost:3000'
+Capybara.app_host = 'http://localhost:3000'
 
 RSpec.configure do |config|
   config.fixture_paths = [
