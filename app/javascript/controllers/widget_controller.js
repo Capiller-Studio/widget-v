@@ -267,10 +267,12 @@ export default class extends Controller {
     const existingMessage = messageId ? document.getElementById(`message_${messageId}`) : null
     if (existingMessage && !this.messageRenderedCorrectly(messageId)) existingMessage.remove()
 
-    const messageEl = this.buildMessageElement(message, messageId, content)
+    const messageEl = this.buildMessageElement(message, messageId, content, attachments.length > 0)
     if (!messageEl) return false
 
-    this.appendCableAttachments(messageEl.querySelector(".agent-reply") || messageEl, attachments)
+    const bubbleEl = messageEl.querySelector(".agent-reply") || messageEl
+    this.appendCableAttachments(bubbleEl, attachments)
+    this.appendCableContent(bubbleEl, message, content)
     this.appendCableMessageTime(messageEl, message)
     list.appendChild(messageEl)
     this.scrollToBottom()
@@ -281,14 +283,13 @@ export default class extends Controller {
     return message.incoming === true || message.incoming === "true"
   }
 
-  buildMessageElement(message, messageId, content) {
+  buildMessageElement(message, messageId, content, hasAttachments) {
     const messageEl = document.createElement("div")
     if (messageId) messageEl.id = `message_${messageId}`
 
     if (this.isIncomingMessage(message)) {
       messageEl.classList.add("client-reply")
-      if (this.isSingleEmojiMessage(content)) messageEl.classList.add("single-emoji-message")
-      if (content) messageEl.textContent = content
+      if (!hasAttachments && this.isSingleEmojiMessage(content)) messageEl.classList.add("single-emoji-message")
       return messageEl
     }
 
@@ -296,18 +297,32 @@ export default class extends Controller {
     const replyEl = document.createElement("div")
     replyEl.classList.add("agent-reply")
 
-    if (content) {
-      const sanitizedContent = this.sanitizeMessageContent(content)
-      if (this.isSingleEmojiMessage(sanitizedContent)) {
-        replyEl.classList.add("single-emoji-message")
-        replyEl.textContent = this.stripHtml(content).trim()
-      } else {
-        replyEl.innerHTML = sanitizedContent
-      }
-    }
+    if (!hasAttachments && this.isSingleEmojiMessage(this.sanitizeMessageContent(content))) replyEl.classList.add("single-emoji-message")
 
     messageEl.appendChild(replyEl)
     return messageEl
+  }
+
+  appendCableContent(container, message, content) {
+    if (!container || !content) return
+
+    const contentEl = document.createElement("div")
+    contentEl.classList.add("msg-content")
+
+    if (this.isIncomingMessage(message)) {
+      contentEl.textContent = content
+      container.appendChild(contentEl)
+      return
+    }
+
+    const sanitizedContent = this.sanitizeMessageContent(content)
+    if (this.isSingleEmojiMessage(sanitizedContent)) {
+      contentEl.textContent = this.stripHtml(content).trim()
+    } else {
+      contentEl.innerHTML = sanitizedContent
+    }
+
+    container.appendChild(contentEl)
   }
 
   sanitizeMessageContent(content) {
@@ -473,12 +488,6 @@ export default class extends Controller {
     const timeText = document.createElement("span")
     timeText.textContent = this.formatMessageTime(message.created_at)
     timeEl.appendChild(timeText)
-
-    const receipt = document.createElement("span")
-    receipt.classList.add("msg-receipt")
-    if (message.status === "read") receipt.classList.add("msg-receipt--read")
-    receipt.textContent = message.status === "sent" ? "✓" : "✓✓"
-    timeEl.appendChild(receipt)
 
     const replyEl = messageEl.querySelector(".agent-reply")
     if (replyEl) replyEl.appendChild(timeEl)

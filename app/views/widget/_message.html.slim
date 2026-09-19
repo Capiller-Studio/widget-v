@@ -1,7 +1,6 @@
+- has_attachments = message.attachments.any?
 - if message.incoming?
-  .client-reply id=dom_id(message) class="#{'single-emoji-message' if single_emoji_message?(message.content)}"
-    - if message.content.present?
-      = message.content
+  .client-reply id=dom_id(message) class="#{'single-emoji-message' if !has_attachments && single_emoji_message?(message.content)}"
     - if message.attachments.any?
       .msg-attachments
         - message.attachments.each do |attachment|
@@ -22,12 +21,12 @@
             a.msg-attachment-file href=rails_blob_path(attachment.file, disposition: "attachment") target="_blank"
               span.file-icon 📄
               span.file-name = attachment.file.filename
+    - if message.content.present?
+      .msg-content = message.content
     .msg-time = message.created_at.strftime("%I:%M %p")
 - else
   .agent-msg id=dom_id(message)
-    .agent-reply class="#{'single-emoji-message' if single_emoji_message?(sanitize(message.content, tags: %w(p b i em strong s strike span code pre ul ol li br a), attributes: %w(class style href target rel dir spellcheck value)))}"
-      - if message.content.present?
-        = single_emoji_message?(sanitize(message.content, tags: %w(p b i em strong s strike span code pre ul ol li br a), attributes: %w(class style href target rel dir spellcheck value))) ? strip_tags(message.content).strip : sanitize(message.content, tags: %w(p b i em strong s strike span code pre ul ol li br a), attributes: %w(class style href target rel dir spellcheck value))
+    .agent-reply class="#{'single-emoji-message' if !has_attachments && single_emoji_message?(sanitize(message.content, tags: %w(p b i em strong s strike span code pre ul ol li br a), attributes: %w(class style href target rel dir spellcheck value)))}"
       - if message.attachments.any?
         .msg-attachments
           - message.attachments.each do |attachment|
@@ -48,11 +47,8 @@
               a.msg-attachment-file href=rails_blob_path(attachment.file, disposition: "attachment") target="_blank"
                 span.file-icon 📄
                 span.file-name = attachment.file.filename
+      - if message.content.present?
+        .msg-content
+          = single_emoji_message?(sanitize(message.content, tags: %w(p b i em strong s strike span code pre ul ol li br a), attributes: %w(class style href target rel dir spellcheck value))) ? strip_tags(message.content).strip : sanitize(message.content, tags: %w(p b i em strong s strike span code pre ul ol li br a), attributes: %w(class style href target rel dir spellcheck value))
       .msg-time
         span = message.created_at.strftime("%I:%M %p")
-        - if message.read?
-          span.msg-receipt.msg-receipt--read ✓✓
-        - elsif message.delivered?
-          span.msg-receipt ✓✓
-        - else
-          span.msg-receipt ✓

@@ -1,7 +1,7 @@
 .chat-screen
   .homepage
     - pre_chat_form = @widget&.pre_chat_form
-    - pre_chat_custom_fields = pre_chat_form&.custom_fields || []
+    - pre_chat_custom_fields = @pre_chat_custom_fields || []
     .header-1
       .header-text = pre_chat_form&.title.presence || @widget&.pre_chat_title.presence || t("widget.pre_chat.title")
     .main.main-gradient.main-content.pre-chat-main

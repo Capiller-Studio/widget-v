@@ -195,7 +195,7 @@ export class DeskbolicEditor {
   }
 
   _showRecordingIndicator() {
-    this._clearFiles()
+    this._renderFilePreview()
     const chip = document.createElement('div')
     chip.classList.add('de-file-chip', 'de-recording-chip')
     chip.id = 'de-recording-indicator'
@@ -226,7 +226,6 @@ export class DeskbolicEditor {
     })
     chip.appendChild(stopBtn)
 
-    this.filePreview.innerHTML = ''
     this.filePreview.appendChild(chip)
     this.filePreview.style.display = 'flex'
   }
@@ -409,6 +408,10 @@ export class DeskbolicEditor {
         const error = this._validateFile(file)
         if (error) {
           this._showError(error)
+          return
+        }
+        if ((this._selectedFiles?.length || 0) >= this.maxFiles) {
+          this._showError(`You can only upload ${this.maxFiles} files`)
           return
         }
 

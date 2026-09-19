@@ -26,7 +26,7 @@
     min-height: 20px;
     max-height: 120px;
     overflow-y: auto;
-    padding: 10px 85px 10px 14px;
+    padding: 10px 90px 10px 14px;
     font-family: $font-family-inter-regular;
     font-size: 14px;
     line-height: 1.5;
@@ -391,6 +391,14 @@
     gap: 6px;
   }
 
+  .msg-attachments + .msg-content {
+    margin-top: 20px;
+  }
+
+  .msg-content {
+    display: block;
+  }
+
   .msg-attachment-img {
     .attachment-image {
       /* max-width: 100%; */
@@ -401,7 +409,7 @@
       object-fit: cover;
       cursor: pointer;
       transition: opacity 0.2s;
-
+      padding-top: 15px;
       &:hover { opacity: 0.9; }
     }
   }
