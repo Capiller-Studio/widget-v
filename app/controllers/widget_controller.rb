@@ -39,7 +39,7 @@ class WidgetController < ApplicationController
 
     if !@customer && !pre_chat_required?
       if @widget.anonymous_allowed?
-        external_id = widget_customer_identifier || "anon-#{SecureRandom.hex(8)}"
+        external_id = widget_customer_identifier || generate_anonymous_external_id
         @customer = Customers::CustomerCreator.call(
           account: @account,
           inbox: @inbox,
@@ -297,7 +297,7 @@ class WidgetController < ApplicationController
       end
     end
 
-    external_id = widget_customer_identifier || customer_data[:email].presence || "anon-#{SecureRandom.hex(8)}"
+    external_id = widget_customer_identifier || customer_data[:email].presence || generate_anonymous_external_id
 
     @customer = Customers::CustomerCreator.call(
       account: @account,
@@ -637,6 +637,14 @@ class WidgetController < ApplicationController
       },
       expiry: 30.days
     )
+  end
+
+  def generate_anonymous_external_id
+    loop do
+      candidate = "anon-#{SecureRandom.uuid}"
+      break candidate unless @account.customers.exists?(external_id: candidate) ||
+                             @inbox.customer_inboxes.exists?(external_id: candidate)
+    end
   end
 
   def set_unread_count

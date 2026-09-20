@@ -4,8 +4,20 @@ require 'rails_helper'
 
 RSpec.describe 'Embed', type: :request do
   let(:account) { create(:account) }
-  let(:widget) { create(:channel_web_widget, account: account) }
-  let(:form) { create(:channel_contact_form, account: account) }
+  let(:widget) do
+    account.with_shard do
+      create(:channel_web_widget, account: account)
+    end
+  end
+  let(:form) do
+    account.with_shard do
+      create(
+        :channel_contact_form,
+        account: account,
+        configurations: { 'primary_color' => '#10B981' }
+      )
+    end
+  end
 
   describe 'GET /w/:account_id/:widget_id/embed.js' do
     it 'returns the widget embed JavaScript with proper headers' do
@@ -21,7 +33,7 @@ RSpec.describe 'Embed', type: :request do
   end
 
   describe 'GET /f/:account_id/:form_id/embed.js' do
-    it 'returns the contact form embed JavaScript with proper headers' do
+    it 'returns the contact form embed JavaScript with proper headers and content' do
       get embed_form_script_path(account_id: account.id, form_id: form.id)
 
       expect(response).to have_http_status(:ok)
@@ -29,7 +41,20 @@ RSpec.describe 'Embed', type: :request do
       expect(response.headers['Cache-Control']).to include('max-age=3600')
       expect(response.headers['Cache-Control']).to include('public')
       expect(response.headers['X-Content-Type-Options']).to eq('nosniff')
-      expect(response.body).to include(form.id.to_s)
+      expect(response.body).to include('ACCOUNT_ID  = "' + account.id.to_s + '"')
+      expect(response.body).to include('FORM_ID     = "' + form.id.to_s + '"')
+      expect(response.body).to include('data-locale')
+      expect(response.body).to include('data-identifier')
+      expect(response.body).to include('data-signature')
+    end
+
+    it 'falls back to default theme color if form is not found' do
+      non_existent_form_id = SecureRandom.uuid
+      get embed_form_script_path(account_id: account.id, form_id: non_existent_form_id)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.content_type).to include('application/javascript')
+      expect(response.body).to include(non_existent_form_id)
     end
   end
 end

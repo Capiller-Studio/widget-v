@@ -1,66 +1,164 @@
-.chat-screen
-  .chat-header
-    h3 = @form.title.presence || @form.name
-    - welcome_text = @form.subtitle.presence || @form.configurations["welcome_message"]
-    - if welcome_text.present?
-      p.welcome-text = welcome_text
+.contact-form-container
+  - if params[:success].present? || flash[:notice].present?
+    .contact-form-success
+      .success-icon-wrapper
+        svg.success-icon viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+          path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"
+          polyline points="22 4 12 14.01 9 11.01"
+      h3.success-title = @form.success_message.presence || flash[:notice].presence || I18n.t(@form.configurations["success_message_i18n_key"] || "contact_form.success", default: "Thank you! Your message has been received.")
+      p.success-description = I18n.t("contact_form.success_description", default: "We have received your message and our team will get back to you shortly.")
+      = link_to I18n.t("contact_form.send_another", default: "Send another message"), contact_form_redirect_path, class: "btn-reset-form"
+    javascript:
+      try {
+        window.parent.postMessage({
+          type: "deskbolic:contact-form:success",
+          form_id: "#{@form.id}"
+        }, "*");
+      } catch(e) {}
+  - else
+    .contact-form-header
+      h2.contact-form-title = @form.display_title
+      p.contact-form-subtitle = @form.display_subtitle
 
-  .chat-box
-    .messages-container
-      - if flash[:notice]
-        .alert.alert-green
-          p = flash[:notice]
+    - if params[:error].present? || flash[:alert].present?
+      .alert.alert-red
+        p = flash[:alert] || I18n.t("contact_form.failure", default: "Something went wrong. Please try again.")
 
-      - if flash[:alert]
-        .alert.alert-red
-          p = flash[:alert]
-      = form_with url: contact_form_submit_path(account_id: @account.id, form_id: @form.id, locale: I18n.locale), method: :post, multipart: true, class: "contact-form", data: { turbo: false } do |f|
-        / Honeypot field
-        - if @form.spam_protection_enabled?
-          .honeypot
-            = text_field_tag :nickname
-        
-        - if @form.require_login?
-          = hidden_field_tag :identifier, params[:identifier]
-          = hidden_field_tag :signature, params[:signature]
-          
-          / If require_login, email/name might be passed securely via HMAC
-          - if @customer_data[:email].present?
-            = hidden_field_tag :email, @customer_data[:email]
-          - if @customer_data[:name].present?
-            = hidden_field_tag :name, @customer_data[:name]
+    = form_with url: contact_form_submit_path(account_id: @account.id, form_id: @form.id, locale: I18n.locale), method: :post, multipart: true, class: "contact-form", data: { turbo: false } do |f|
+      / Honeypot field
+      - if @form.spam_protection_enabled?
+        .honeypot
+          = text_field_tag :nickname
+      
+      - if @form.require_login?
+        = hidden_field_tag :identifier, params[:identifier]
+        = hidden_field_tag :signature, params[:signature]
+      
+      / If require_login, email/name might be passed securely via HMAC
+      - if @customer_data[:email].present?
+        = hidden_field_tag :email, @customer_data[:email]
+      - if @customer_data[:name].present?
+        = hidden_field_tag :name, @customer_data[:name]
 
-        - @custom_fields.each do |field|
-          .form-group
-            - label_text = field.label.presence || field.key.titleize
-            - placeholder_text = field.placeholder
+      - fields_to_render = @custom_field_resources.presence || @custom_fields.map { |cf| OpenStruct.new(custom_field: cf, configurations: { "width" => "full" }, required_override: false) }
+      - fields_to_render.each do |item|
+        - field = item.is_a?(CustomFieldResource) ? item.custom_field : (item.respond_to?(:custom_field) ? item.custom_field : item)
+        - width = (item.respond_to?(:configurations) ? item.configurations&.dig("width") : nil) == "half" ? "is-half-width" : "is-full-width"
+        - is_required = field.required? || (item.respond_to?(:required_override) && item.required_override)
+        - label_text = field.label.presence || field.key.titleize
+        - placeholder_text = field.placeholder.presence || label_text
+        - is_customer = field.entity_type_customer?
+        - val = @customer_data[field.key.to_sym] if is_customer
+        - is_readonly = field.is_readonly || (@form.require_login? && val.present?)
 
-            label for=field.key
-              = label_text
-              - if field.required?
-                span.required-asterisk *
+        .form-field-wrapper class=width
+          - case field.field_type.to_sym
+          - when :textarea
+            .form-message-field
+              label for=field.key
+                = label_text
+                - if is_required
+                  span.required-asterisk *
+              = text_area_tag field.key, nil, placeholder: (field.placeholder.presence || "Type your message here..."), required: is_required, class: "form-control", rows: 4
 
-            - case field.field_type.to_sym
-            - when :text, :email, :phone, :number, :url
-              - is_customer = field.entity_type_customer?
-              - value = @customer_data[field.key.to_sym] if is_customer
-              - is_readonly = field.is_readonly || (@form.require_login? && @customer_data[field.key.to_sym].present?)
-              = text_field_tag field.key, value, placeholder: placeholder_text, required: field.required?, class: "form-control", readonly: is_readonly
-
-            - when :textarea
-              = text_area_tag field.key, nil, placeholder: placeholder_text, required: field.required?, class: "form-control", rows: 4
-
-            - when :select
+          - when :select
+            .form-select-field
+              label for=field.key
+                = label_text
+                - if is_required
+                  span.required-asterisk *
               - options = field.localized_options(I18n.locale).map { |o| [o["label"], o["value"]] }
-              = select_tag field.key, options_for_select(options), include_blank: "Select...", required: field.required?, class: "form-control"
+              = select_tag field.key, options_for_select(options), include_blank: "Select...", required: is_required, class: "form-control"
 
-        - if @form.allow_attachments?
-          .form-group.attachment-form-group
+          - when :checkbox
+            .form-checkbox-field
+              label.checkbox-container
+                = check_box_tag field.key, "1", val.present?, required: is_required, class: "form-checkbox-input", disabled: is_readonly
+                span.checkbox-custom
+                span.checkbox-label
+                  = label_text
+                  - if is_required
+                    span.required-asterisk *
+
+          - else
+            .form-input-field
+              - key_str = field.key.to_s.downcase
+              - type_sym = field.field_type.to_sym
+              - if type_sym == :email || key_str.include?("mail")
+                svg.field-icon xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
+                  polyline points="22,6 12,13 2,6"
+                = email_field_tag field.key, val, placeholder: placeholder_text, required: is_required, class: "form-control", readonly: is_readonly, "aria-label": label_text
+
+              - elsif type_sym == :phone || key_str.include?("phone")
+                svg.field-icon xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
+                = telephone_field_tag field.key, val, placeholder: placeholder_text, required: is_required, class: "form-control", readonly: is_readonly, "aria-label": label_text
+
+              - elsif type_sym == :url || key_str.include?("url") || key_str.include?("website")
+                svg.field-icon xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  circle cx="12" cy="12" r="10"
+                  line x1="2" y1="12" x2="22" y2="12"
+                  path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
+                = url_field_tag field.key, val, placeholder: placeholder_text, required: is_required, class: "form-control", readonly: is_readonly, "aria-label": label_text
+
+              - elsif type_sym == :number || key_str.include?("count") || key_str.include?("amount")
+                svg.field-icon xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  line x1="4" y1="9" x2="20" y2="9"
+                  line x1="4" y1="15" x2="20" y2="15"
+                  line x1="10" y1="3" x2="8" y2="21"
+                  line x1="16" y1="3" x2="14" y2="21"
+                = number_field_tag field.key, val, placeholder: placeholder_text, required: is_required, class: "form-control", readonly: is_readonly, "aria-label": label_text
+
+              - elsif type_sym == :date || key_str.include?("date")
+                svg.field-icon xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  rect x="3" y="4" width="18" height="18" rx="2" ry="2"
+                  line x1="16" y1="2" x2="16" y2="6"
+                  line x1="8" y1="2" x2="8" y2="6"
+                  line x1="3" y1="10" x2="21" y2="10"
+                = date_field_tag field.key, val, placeholder: placeholder_text, required: is_required, class: "form-control", readonly: is_readonly, "aria-label": label_text
+
+              - elsif key_str.include?("name") || key_str.include?("user")
+                svg.field-icon xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"
+                  circle cx="12" cy="7" r="4"
+                = text_field_tag field.key, val, placeholder: placeholder_text, required: is_required, class: "form-control", readonly: is_readonly, "aria-label": label_text
+
+              - elsif key_str.include?("subject") || key_str.include?("title") || key_str.include?("topic")
+                svg.field-icon xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  path d="M12 20h9"
+                  path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"
+                = text_field_tag field.key, val, placeholder: placeholder_text, required: is_required, class: "form-control", readonly: is_readonly, "aria-label": label_text
+
+              - else
+                svg.field-icon xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  rect x="3" y="3" width="18" height="18" rx="2" ry="2"
+                  line x1="9" y1="9" x2="15" y2="9"
+                  line x1="9" y1="15" x2="15" y2="15"
+                = text_field_tag field.key, val, placeholder: placeholder_text, required: is_required, class: "form-control", readonly: is_readonly, "aria-label": label_text
+
+      - if @form.allow_attachments?
+        .form-field-wrapper.is-full-width
+          .attachment-form-group
             label for="attachments"
               = I18n.t("contact_form.attachments", default: "Attachments")
-            = file_field_tag "attachments[]", id: "attachments", multiple: true, class: "form-control attachment-control", accept: "image/*,video/*,audio/*,.pdf,.doc,.docx,.txt,.zip"
+            .attachment-dropzone
+              svg.attachment-icon xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"
+              = file_field_tag "attachments[]", id: "attachments", multiple: true, class: "attachment-control", accept: "image/*,video/*,audio/*,.pdf,.doc,.docx,.txt,.zip"
+              span.attachment-hint = I18n.t("contact_form.attachments_hint", default: "Click or drag files here to upload")
 
-        .form-actions
-          - submit_text = @form.submit_button_text.presence || I18n.t("contact_form.send_message", default: "Submit Request")
-          - submit_color = @form.theme_color.presence || @form.ui_configurations&.dig("theme_color") || @form.configurations["primary_color"] || "#10B981"
-          = f.submit submit_text, class: "btn-submit", style: "background: #{submit_color};"
+      .form-actions.is-full-width
+        - submit_text = @form.display_submit_button_text
+        - submit_color = @form.theme_color.presence || @form.ui_configurations&.dig("theme_color") || @form.configurations["primary_color"]
+        button.send-message-button type="submit" style=(submit_color.present? ? "--btn-bg: #{submit_color};" : nil)
+          span = submit_text
+          svg.btn-arrow-icon xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+            line x1="5" y1="12" x2="19" y2="12"
+            polyline points="12 5 19 12 12 19"
+
+      .form-security.is-full-width
+        svg.lock-icon xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+          rect x="3" y="11" width="18" height="11" rx="2" ry="2"
+          path d="M7 11V7a5 5 0 0 1 10 0v4"
+        span = I18n.t("contact_form.security_notice", default: "Your information is safe with us. We never share your data.")
