@@ -1,0 +1,13 @@
+.chat-screen
+  .chat-header
+    h3 = I18n.t("contact_form.not_found_header", default: "Contact Form")
+  .chat-box
+    .messages-container
+      .contact-form-not-found
+        .not-found-icon-wrapper
+          svg.not-found-icon viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            circle cx="12" cy="12" r="10"
+            line x1="12" y1="8" x2="12" y2="12"
+            line x1="12" y1="16" x2="12.01" y2="16"
+        h4.not-found-title = I18n.t("contact_form.not_found_heading", default: "Form Unavailable")
+        p.not-found-description = I18n.t("contact_form.not_found_message", default: "This contact form could not be found or has been disabled. Please contact the site administrator.")

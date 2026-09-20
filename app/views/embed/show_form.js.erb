@@ -5,74 +5,194 @@
   var ACCOUNT_ID  = "<%= @account_id %>";
   var FORM_ID     = "<%= @form_id %>";
 
-  // Read configuration from the script tag's data attributes
-  var scriptTag = document.currentScript;
-  var locale     = scriptTag.getAttribute("data-locale") || "en";
-  var identifier = scriptTag.getAttribute("data-identifier") || "";
-  var signature  = scriptTag.getAttribute("data-signature") || "";
-  var email      = scriptTag.getAttribute("data-email") || "";
-  var name       = scriptTag.getAttribute("data-name") || "";
+  // Safe script tag resolution (supports synchronous inline, async, deferred, and tag-manager loading)
+  var scriptTag = document.currentScript ||
+                  document.querySelector('script[src*="/f/' + ACCOUNT_ID + '/' + FORM_ID + '/embed.js"]') ||
+                  document.querySelector('script[data-form-id="' + FORM_ID + '"]') ||
+                  document.querySelector('script[src*="/embed.js"]');
 
-  // Build the iframe src
-  var src = WIDGET_HOST + "/" + locale + "/f/" + ACCOUNT_ID + "/" + FORM_ID;
+  var getAttr = function(attr) {
+    return scriptTag ? scriptTag.getAttribute(attr) : null;
+  };
+
+  // User configuration and personalization attributes
+  var locale          = getAttr("data-locale") || (navigator.language || "").split("-")[0] || "en";
+  var identifier      = getAttr("data-identifier") || "";
+  var signature       = getAttr("data-signature") || "";
+  var email           = getAttr("data-email") || "";
+  var name            = getAttr("data-name") || "";
+  var phone           = getAttr("data-phone") || "";
+  var themeColor      = getAttr("data-color") || getAttr("data-theme") || "<%= @theme_color %>";
+  var showBorder      = !["false", "0", "none"].includes(getAttr("data-border"));
+  var borderColor     = getAttr("data-border-color") || "#e2e8f0";
+  var showShadow      = !["false", "0", "none"].includes(getAttr("data-shadow"));
+  var shadowStyle     = getAttr("data-shadow-style") || "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)";
+  var borderRadius    = getAttr("data-border-radius") || getAttr("data-radius") || "12px";
+  var bgColor         = getAttr("data-background") || getAttr("data-bg") || "#fff";
+  var width           = getAttr("data-width") || "100%";
+  var minHeight       = parseInt(getAttr("data-min-height"), 10) || 320;
+  var maxHeightAttr   = getAttr("data-max-height");
+  var autoResize      = getAttr("data-auto-resize") !== "false";
+  var customClass     = getAttr("data-class") || "";
+  var customId        = getAttr("data-id") || ("deskbolic-form-" + FORM_ID);
+  var targetContainer = getAttr("data-target") || getAttr("data-container") || getAttr("data-container-id");
+  var onSuccessCb     = getAttr("data-on-success");
+  var onReadyCb       = getAttr("data-on-ready");
+
+  // Build the iframe entry source URL
+  var src = WIDGET_HOST + "/" + encodeURIComponent(locale) + "/f/" + encodeURIComponent(ACCOUNT_ID) + "/" + encodeURIComponent(FORM_ID);
   var params = [];
   if (identifier) params.push("identifier=" + encodeURIComponent(identifier));
   if (signature)  params.push("signature=" + encodeURIComponent(signature));
   if (email)      params.push("email=" + encodeURIComponent(email));
   if (name)       params.push("name=" + encodeURIComponent(name));
+  if (phone)      params.push("phone=" + encodeURIComponent(phone));
+  if (themeColor) params.push("theme_color=" + encodeURIComponent(themeColor));
   if (params.length > 0) src += "?" + params.join("&");
 
-  // Create iframe
+  // Create isolated iframe element
   var iframe = document.createElement("iframe");
+  iframe.id = customId;
+  if (customClass) iframe.className = customClass;
   iframe.src = src;
-  iframe.style.cssText = "width:100%;height:0;min-height:0;max-height:calc(100vh - 32px);border:0;border-radius:12px;background:#fff;box-shadow:none;visibility:hidden;overflow:hidden;";
-  iframe.setAttribute("allow", "microphone; camera");
+  iframe.style.cssText = "width:" + width + ";height:0;min-height:0;border:0;background:transparent;visibility:hidden;overflow:hidden;transition:height 0.2s cubic-bezier(0.4, 0, 0.2, 1);";
+  iframe.setAttribute("allow", "microphone; camera; clipboard-write");
+  iframe.setAttribute("loading", "lazy");
+  iframe.setAttribute("tabindex", "0");
   iframe.title = "Contact Form";
 
-  // Insert iframe right after the script tag
-  scriptTag.parentNode.insertBefore(iframe, scriptTag.nextSibling);
+  // Mount iframe into DOM with container and head-tag fallbacks
+  function mountIframe() {
+    var container = null;
+    if (targetContainer) {
+      container = document.querySelector(targetContainer) || document.getElementById(targetContainer);
+    }
+
+    if (container) {
+      container.appendChild(iframe);
+    } else if (scriptTag && scriptTag.parentNode && scriptTag.parentNode.tagName !== "HEAD") {
+      scriptTag.parentNode.insertBefore(iframe, scriptTag.nextSibling);
+    } else if (document.body) {
+      document.body.appendChild(iframe);
+    }
+  }
+
+  if (document.readyState === "loading" && (!document.body || targetContainer)) {
+    document.addEventListener("DOMContentLoaded", mountIframe);
+  } else {
+    mountIframe();
+  }
 
   var hasMeasured = false;
 
   function revealIframe() {
     if (hasMeasured) return;
-
     hasMeasured = true;
+
     iframe.style.visibility = "visible";
-    iframe.style.border = "1px solid #e2e8f0";
-    iframe.style.boxShadow = "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)";
+    iframe.style.borderRadius = borderRadius;
+    iframe.style.background = bgColor;
+
+    if (showBorder) {
+      iframe.style.border = "1px solid " + borderColor;
+    } else {
+      iframe.style.border = "none";
+    }
+
+    if (showShadow) {
+      iframe.style.boxShadow = shadowStyle;
+    } else {
+      iframe.style.boxShadow = "none";
+    }
+
+    try {
+      var readyEvent = new CustomEvent("deskbolic:form:ready", {
+        bubbles: true,
+        detail: { formId: FORM_ID, accountId: ACCOUNT_ID, iframe: iframe }
+      });
+      window.dispatchEvent(readyEvent);
+      iframe.dispatchEvent(readyEvent);
+
+      if (onReadyCb && typeof window[onReadyCb] === "function") {
+        window[onReadyCb]({ formId: FORM_ID, accountId: ACCOUNT_ID, iframe: iframe });
+      }
+    } catch (e) {}
   }
 
   function resizeIframe(contentHeight) {
-    if (!contentHeight || contentHeight < 0) return;
+    if (!autoResize || !contentHeight || contentHeight <= 0) return;
 
-    var viewportLimit = Math.max(320, window.innerHeight - 32);
-    var nextHeight = Math.min(Math.ceil(contentHeight), viewportLimit);
+    var maxHeight = Infinity;
+    if (maxHeightAttr) {
+      if (maxHeightAttr === "viewport") {
+        maxHeight = Math.max(minHeight, window.innerHeight - 32);
+      } else if (maxHeightAttr !== "none") {
+        var parsed = parseInt(maxHeightAttr, 10);
+        if (!isNaN(parsed) && parsed > 0) {
+          maxHeight = parsed;
+        }
+      }
+    }
 
-    iframe.style.height = nextHeight + "px";
-    iframe.style.overflow = contentHeight > viewportLimit ? "auto" : "hidden";
+    var targetHeight = Math.max(minHeight, Math.ceil(contentHeight) + 16);
+    var finalHeight = Math.min(targetHeight, maxHeight);
+
+    iframe.style.height = finalHeight + "px";
+    iframe.style.overflow = (targetHeight > maxHeight) ? "auto" : "hidden";
+    if (iframe.setAttribute) {
+      iframe.setAttribute("scrolling", (targetHeight > maxHeight) ? "auto" : "no");
+    }
     revealIframe();
+
+    try {
+      window.dispatchEvent(new CustomEvent("deskbolic:form:resize", {
+        bubbles: true,
+        detail: { formId: FORM_ID, accountId: ACCOUNT_ID, height: finalHeight }
+      }));
+    } catch (e) {}
   }
 
+  // Cross-frame messaging
   window.addEventListener("message", function(event) {
     if (event.source !== iframe.contentWindow) return;
-    if (!event.data || event.data.type !== "deskbolic:contact-form:resize") return;
+    if (!event.data || typeof event.data !== "object") return;
 
-    resizeIframe(event.data.height);
+    var type = event.data.type;
+
+    if (type === "deskbolic:contact-form:resize") {
+      resizeIframe(event.data.height);
+    } else if (type === "deskbolic:contact-form:ready") {
+      revealIframe();
+    } else if (type === "deskbolic:contact-form:success") {
+      try {
+        var successEvent = new CustomEvent("deskbolic:form:success", {
+          bubbles: true,
+          detail: { formId: FORM_ID, accountId: ACCOUNT_ID }
+        });
+        window.dispatchEvent(successEvent);
+        iframe.dispatchEvent(successEvent);
+
+        if (onSuccessCb && typeof window[onSuccessCb] === "function") {
+          window[onSuccessCb]({ formId: FORM_ID, accountId: ACCOUNT_ID });
+        }
+      } catch (e) {}
+    }
   });
 
+  // Window resize handler to maintain responsive height inside iframe
   window.addEventListener("resize", function() {
     try {
       iframe.contentWindow.postMessage({ type: "deskbolic:contact-form:measure" }, WIDGET_HOST);
     } catch (error) {
-      // Cross-origin failures should not break the host page.
+      // Cross-origin failures should not break the host page
     }
   });
 
+  // Fallback timer: ensure the iframe is never permanently invisible
   window.setTimeout(function() {
     if (hasMeasured) return;
 
-    iframe.style.height = "320px";
+    iframe.style.height = Math.max(minHeight, 420) + "px";
     iframe.style.overflow = "auto";
     revealIframe();
   }, 2000);
