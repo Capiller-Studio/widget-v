@@ -81,6 +81,10 @@
                     span.required-asterisk *
 
           - else
+            label for=field.key
+              = label_text
+              - if is_required
+                span.required-asterisk *
             .form-input-field
               - key_str = field.key.to_s.downcase
               - type_sym = field.field_type.to_sym
@@ -88,19 +92,19 @@
                 svg.field-icon xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                   path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
                   polyline points="22,6 12,13 2,6"
-                = email_field_tag field.key, val, placeholder: placeholder_text, required: is_required, class: "form-control", readonly: is_readonly, "aria-label": label_text
+                = email_field_tag field.key, val, id: field.key, placeholder: placeholder_text, required: is_required, class: "form-control", readonly: is_readonly, "aria-label": label_text
 
               - elsif type_sym == :phone || key_str.include?("phone")
                 svg.field-icon xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                   path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
-                = telephone_field_tag field.key, val, placeholder: placeholder_text, required: is_required, class: "form-control", readonly: is_readonly, "aria-label": label_text
+                = telephone_field_tag field.key, val, id: field.key, placeholder: placeholder_text, required: is_required, class: "form-control", readonly: is_readonly, "aria-label": label_text
 
               - elsif type_sym == :url || key_str.include?("url") || key_str.include?("website")
                 svg.field-icon xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                   circle cx="12" cy="12" r="10"
                   line x1="2" y1="12" x2="22" y2="12"
                   path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
-                = url_field_tag field.key, val, placeholder: placeholder_text, required: is_required, class: "form-control", readonly: is_readonly, "aria-label": label_text
+                = url_field_tag field.key, val, id: field.key, placeholder: placeholder_text, required: is_required, class: "form-control", readonly: is_readonly, "aria-label": label_text
 
               - elsif type_sym == :number || key_str.include?("count") || key_str.include?("amount")
                 svg.field-icon xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -108,7 +112,7 @@
                   line x1="4" y1="15" x2="20" y2="15"
                   line x1="10" y1="3" x2="8" y2="21"
                   line x1="16" y1="3" x2="14" y2="21"
-                = number_field_tag field.key, val, placeholder: placeholder_text, required: is_required, class: "form-control", readonly: is_readonly, "aria-label": label_text
+                = number_field_tag field.key, val, id: field.key, placeholder: placeholder_text, required: is_required, class: "form-control", readonly: is_readonly, "aria-label": label_text
 
               - elsif type_sym == :date || key_str.include?("date")
                 svg.field-icon xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -116,26 +120,26 @@
                   line x1="16" y1="2" x2="16" y2="6"
                   line x1="8" y1="2" x2="8" y2="6"
                   line x1="3" y1="10" x2="21" y2="10"
-                = date_field_tag field.key, val, placeholder: placeholder_text, required: is_required, class: "form-control", readonly: is_readonly, "aria-label": label_text
+                = date_field_tag field.key, val, id: field.key, placeholder: placeholder_text, required: is_required, class: "form-control", readonly: is_readonly, "aria-label": label_text
 
               - elsif key_str.include?("name") || key_str.include?("user")
                 svg.field-icon xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                   path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"
                   circle cx="12" cy="7" r="4"
-                = text_field_tag field.key, val, placeholder: placeholder_text, required: is_required, class: "form-control", readonly: is_readonly, "aria-label": label_text
+                = text_field_tag field.key, val, id: field.key, placeholder: placeholder_text, required: is_required, class: "form-control", readonly: is_readonly, "aria-label": label_text
 
               - elsif key_str.include?("subject") || key_str.include?("title") || key_str.include?("topic")
                 svg.field-icon xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                   path d="M12 20h9"
                   path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"
-                = text_field_tag field.key, val, placeholder: placeholder_text, required: is_required, class: "form-control", readonly: is_readonly, "aria-label": label_text
+                = text_field_tag field.key, val, id: field.key, placeholder: placeholder_text, required: is_required, class: "form-control", readonly: is_readonly, "aria-label": label_text
 
               - else
                 svg.field-icon xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                   rect x="3" y="3" width="18" height="18" rx="2" ry="2"
                   line x1="9" y1="9" x2="15" y2="9"
                   line x1="9" y1="15" x2="15" y2="15"
-                = text_field_tag field.key, val, placeholder: placeholder_text, required: is_required, class: "form-control", readonly: is_readonly, "aria-label": label_text
+                = text_field_tag field.key, val, id: field.key, placeholder: placeholder_text, required: is_required, class: "form-control", readonly: is_readonly, "aria-label": label_text
 
       - if @form.allow_attachments?
         .form-field-wrapper.is-full-width
