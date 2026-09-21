@@ -2,6 +2,20 @@
    Modern Standalone Contact Form Channel Styles
    ========================================================================== */
 
+:root {
+  --contact-form-label-color: #31405f;
+  --contact-form-required-color: #ef4444;
+  --contact-form-title-color: #121a36;
+  --contact-form-subtitle-color: #46537d;
+  --contact-form-text-color: #1b2746;
+  --contact-form-input-bg: #ffffff;
+  --contact-form-input-border: #dfe4ef;
+  --contact-form-input-hover-border: #cbd5e1;
+  --contact-form-placeholder-color: #8b95b1;
+  --contact-form-icon-color: #94a3b8;
+  --contact-form-security-color: #8a9ab7;
+}
+
 body.contact-form-embed {
   margin: 0;
   padding: 0;
@@ -46,6 +60,11 @@ body.contact-form-embed .profiler-results {
   animation: formFadeIn 0.3s ease-out;
 }
 
+body.contact-form-embed.has-border .contact-form-container {
+  padding: clamp(20px, 3.5vw, 32px);
+  box-sizing: border-box;
+}
+
 /* Header */
 .contact-form-header {
   margin-bottom: 24px;
@@ -55,7 +74,7 @@ body.contact-form-embed .profiler-results {
   font-family: $font-family-jakarta-semibold;
   font-size: clamp(24px, 2.2vw, 30px);
   font-weight: 800;
-  color: #121a36;
+  color: var(--contact-form-title-color, currentColor);
   line-height: 1.2;
   letter-spacing: -0.03em;
   margin: 0 0 8px;
@@ -64,7 +83,7 @@ body.contact-form-embed .profiler-results {
 .contact-form-header .contact-form-subtitle {
   font-family: $font-family-inter-regular;
   font-size: 15px;
-  color: #46537d;
+  color: var(--contact-form-subtitle-color, #46537d);
   margin: 0;
   line-height: 1.5;
 }
@@ -76,6 +95,28 @@ body.contact-form-embed .profiler-results {
   gap: 16px;
   width: 100%;
   box-sizing: border-box;
+}
+
+.form-field-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-field-wrapper > label {
+  font-family: $font-family-inter-medium;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--contact-form-label-color, currentColor);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.form-field-wrapper > label .required-asterisk {
+  color: var(--contact-form-required-color, #ef4444);
 }
 
 .form-field-wrapper.is-full-width {
@@ -99,15 +140,15 @@ body.contact-form-embed .profiler-results {
   min-height: 52px;
   height: 52px;
   padding: 0 18px;
-  border: 1.5px solid #dfe4ef;
+  border: 1.5px solid var(--contact-form-input-border, #dfe4ef);
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--contact-form-input-bg, #ffffff);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   box-sizing: border-box;
 }
 
 .form-input-field:hover {
-  border-color: #cbd5e1;
+  border-color: var(--contact-form-input-hover-border, #cbd5e1);
 }
 
 .form-input-field:focus-within {
@@ -118,7 +159,7 @@ body.contact-form-embed .profiler-results {
 .form-input-field .field-icon {
   width: 20px;
   height: 20px;
-  stroke: #94a3b8;
+  stroke: var(--contact-form-icon-color, #94a3b8);
   margin-right: 12px;
   flex: 0 0 auto;
 }
@@ -132,12 +173,12 @@ body.contact-form-embed .profiler-results {
   font-family: $font-family-inter-medium;
   font-size: 15px;
   font-weight: 500;
-  color: #1b2746;
+  color: var(--contact-form-text-color, #1b2746);
   padding: 0;
 }
 
 .form-input-field input.form-control::placeholder {
-  color: #8b95b1;
+  color: var(--contact-form-placeholder-color, #8b95b1);
   font-family: $font-family-inter-regular;
   font-size: 15px;
 }
@@ -154,7 +195,7 @@ body.contact-form-embed .profiler-results {
   font-family: $font-family-inter-medium;
   font-size: 15px;
   font-weight: 600;
-  color: #31405f;
+  color: var(--contact-form-label-color, currentColor);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -162,19 +203,19 @@ body.contact-form-embed .profiler-results {
 
 .form-message-field label .required-asterisk,
 .form-select-field label .required-asterisk {
-  color: #ef4444;
+  color: var(--contact-form-required-color, #ef4444);
 }
 
 .form-message-field textarea.form-control {
   min-height: 125px;
   padding: 14px 18px;
-  border: 1.5px solid #dfe4ef;
+  border: 1.5px solid var(--contact-form-input-border, #dfe4ef);
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--contact-form-input-bg, #ffffff);
   font-family: $font-family-inter-medium;
   font-size: 15px;
   font-weight: 500;
-  color: #1b2746;
+  color: var(--contact-form-text-color, #1b2746);
   outline: 0;
   resize: vertical;
   line-height: 1.5;
@@ -183,7 +224,7 @@ body.contact-form-embed .profiler-results {
 }
 
 .form-message-field textarea.form-control:hover {
-  border-color: #cbd5e1;
+  border-color: var(--contact-form-input-hover-border, #cbd5e1);
 }
 
 .form-message-field textarea.form-control:focus {
@@ -192,7 +233,7 @@ body.contact-form-embed .profiler-results {
 }
 
 .form-message-field textarea.form-control::placeholder {
-  color: #8b95b1;
+  color: var(--contact-form-placeholder-color, #8b95b1);
   font-family: $font-family-inter-regular;
   font-size: 15px;
 }
@@ -209,7 +250,7 @@ body.contact-form-embed .profiler-results {
   font-family: $font-family-inter-medium;
   font-size: 15px;
   font-weight: 600;
-  color: #31405f;
+  color: var(--contact-form-label-color, currentColor);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -219,13 +260,13 @@ body.contact-form-embed .profiler-results {
   min-height: 52px;
   height: 52px;
   padding: 0 16px;
-  border: 1.5px solid #dfe4ef;
+  border: 1.5px solid var(--contact-form-input-border, #dfe4ef);
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--contact-form-input-bg, #ffffff);
   font-family: $font-family-inter-medium;
   font-size: 15px;
   font-weight: 500;
-  color: #1b2746;
+  color: var(--contact-form-text-color, #1b2746);
   outline: 0;
   cursor: pointer;
   appearance: auto;
@@ -263,7 +304,7 @@ body.contact-form-embed .profiler-results {
 .checkbox-container .checkbox-label {
   font-family: $font-family-inter-medium;
   font-size: 14px;
-  color: #31405f;
+  color: var(--contact-form-label-color, currentColor);
 }
 
 /* Attachment Dropzone */
@@ -278,7 +319,7 @@ body.contact-form-embed .profiler-results {
   font-family: $font-family-inter-medium;
   font-size: 14px;
   font-weight: 600;
-  color: #31405f;
+  color: var(--contact-form-label-color, currentColor);
 }
 
 .attachment-dropzone {
@@ -383,7 +424,7 @@ body.contact-form-embed .profiler-results {
   justify-content: center;
   gap: 8px;
   margin-top: 24px;
-  color: #8a9ab7;
+  color: var(--contact-form-security-color, #8a9ab7);
   font-family: $font-family-inter-regular;
   font-size: 14px;
   text-align: center;
@@ -392,7 +433,7 @@ body.contact-form-embed .profiler-results {
 .form-security .lock-icon {
   width: 15px;
   height: 15px;
-  stroke: #94a3b8;
+  stroke: var(--contact-form-icon-color, #94a3b8);
   flex: 0 0 auto;
 }
 
@@ -449,7 +490,7 @@ body.contact-form-embed .profiler-results {
   font-family: $font-family-jakarta-semibold;
   font-size: 20px;
   font-weight: 700;
-  color: #121a36;
+  color: var(--contact-form-title-color, #121a36);
   margin: 0 0 8px;
   line-height: 1.3;
 }
@@ -457,7 +498,7 @@ body.contact-form-embed .profiler-results {
 .contact-form-success .success-description {
   font-family: $font-family-inter-regular;
   font-size: 15px;
-  color: #46537d;
+  color: var(--contact-form-subtitle-color, #46537d);
   margin: 0 0 24px;
   line-height: 1.5;
 }
@@ -512,7 +553,7 @@ body.contact-form-embed .profiler-results {
   font-family: $font-family-jakarta-semibold;
   font-size: 20px;
   font-weight: 700;
-  color: #121a36;
+  color: var(--contact-form-title-color, #121a36);
   margin: 0 0 8px;
   line-height: 1.3;
 }
@@ -520,7 +561,7 @@ body.contact-form-embed .profiler-results {
 .contact-form-not-found .not-found-description {
   font-family: $font-family-inter-regular;
   font-size: 15px;
-  color: #64748b;
+  color: var(--contact-form-subtitle-color, #64748b);
   margin: 0;
   line-height: 1.5;
 }

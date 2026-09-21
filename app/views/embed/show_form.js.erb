@@ -26,9 +26,9 @@
   var showBorder      = !["false", "0", "none"].includes(getAttr("data-border"));
   var borderColor     = getAttr("data-border-color") || "#e2e8f0";
   var showShadow      = !["false", "0", "none"].includes(getAttr("data-shadow"));
-  var shadowStyle     = getAttr("data-shadow-style") || "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)";
-  var borderRadius    = getAttr("data-border-radius") || getAttr("data-radius") || "12px";
-  var bgColor         = getAttr("data-background") || getAttr("data-bg") || "#fff";
+  var shadowStyle     = getAttr("data-shadow-style") || "0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02)";
+  var borderRadius    = getAttr("data-border-radius") || getAttr("data-radius") || "16px";
+  var bgColor         = getAttr("data-background") || getAttr("data-bg") || "transparent";
   var width           = getAttr("data-width") || "100%";
   var minHeight       = parseInt(getAttr("data-min-height"), 10) || 320;
   var maxHeightAttr   = getAttr("data-max-height");
@@ -42,6 +42,7 @@
   // Build the iframe entry source URL
   var src = WIDGET_HOST + "/" + encodeURIComponent(locale) + "/f/" + encodeURIComponent(ACCOUNT_ID) + "/" + encodeURIComponent(FORM_ID);
   var params = [];
+  if (showBorder) params.push("bordered=1");
   if (identifier) params.push("identifier=" + encodeURIComponent(identifier));
   if (signature)  params.push("signature=" + encodeURIComponent(signature));
   if (email)      params.push("email=" + encodeURIComponent(email));

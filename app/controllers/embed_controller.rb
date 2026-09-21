@@ -19,7 +19,7 @@ class EmbedController < ApplicationController
     end
 
     response.headers["Content-Type"] = "application/javascript"
-    response.headers["Cache-Control"] = "public, max-age=3600, s-maxage=86400"
+    response.headers["Cache-Control"] = "public, max-age=3600, s-maxage=86400, stale-while-revalidate=600"
     response.headers["X-Content-Type-Options"] = "nosniff"
 
     render(layout: false)
@@ -40,7 +40,7 @@ class EmbedController < ApplicationController
     end
 
     response.headers["Content-Type"] = "application/javascript"
-    response.headers["Cache-Control"] = "public, max-age=3600, s-maxage=86400"
+    response.headers["Cache-Control"] = "public, max-age=3600, s-maxage=86400, stale-while-revalidate=600"
     response.headers["X-Content-Type-Options"] = "nosniff"
 
     render(layout: false)
