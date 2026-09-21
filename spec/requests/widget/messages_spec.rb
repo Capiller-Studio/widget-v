@@ -36,6 +36,20 @@ RSpec.describe 'Widget::Messages', type: :request do
       end
     end
 
+    it 'renders a linked pre-chat contact form with ordered custom fields' do
+      account.with_shard do
+        pre_chat = create(:channel_contact_form, account: account)
+        department_field = create(:custom_field, account: account, key: 'department')
+        create(:custom_field_resource, resource: pre_chat, custom_field: department_field, position: 1)
+        widget.update!(pre_chat_form: pre_chat)
+
+        get widget_messages_path(account_id: account.id, widget_id: widget.id), headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include('custom_fields[department]')
+      end
+    end
+
     it 'returns 401 unauthorized when anonymous chat is disabled and visitor is unauthenticated' do
       account.with_shard do
         widget.update!(flags: 0) # anonymous_allowed = false

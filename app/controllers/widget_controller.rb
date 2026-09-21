@@ -274,8 +274,8 @@ class WidgetController < ApplicationController
     conversation_data = { title: nil, priority: nil, data: {} }
     message_content = nil
 
-    if @widget.pre_chat_form&.custom_fields&.any? && params[:custom_fields].present?
-      @widget.pre_chat_form.custom_fields.each do |field|
+    if @pre_chat_custom_fields.any? && params[:custom_fields].present?
+      @pre_chat_custom_fields.each do |field|
         value = params[:custom_fields][field.key]
         next if value.blank?
 
@@ -445,7 +445,7 @@ class WidgetController < ApplicationController
 
     @portal = @widget.portal
     @categories = @portal ? @portal.categories.active.everyone.includes(:translations, image_attachment: :blob).limit(6) : []
-    load_category_article_counts(@categories)
+    # load_category_article_counts(@categories)
   end
 
   def set_sharding_context(&)
@@ -461,9 +461,10 @@ class WidgetController < ApplicationController
   def set_widget
     @account ||= Account.find(widget_account_id)
     @widget = Channel::WebWidget
-      .includes(:primary_inbox, :translations, pre_chat_form: [ :translations, { custom_fields: :translations } ])
+      .includes(:primary_inbox, :translations, pre_chat_form: [ :translations, { custom_field_resources: { custom_field: :translations } } ])
       .find_by!(account: @account, id: widget_id)
     @inbox = @widget.primary_inbox
+    @pre_chat_custom_fields = ordered_pre_chat_custom_fields
 
     if @widget&.primary_inbox&.business_hour_group_id.present?
       @is_offline = !AssignmentPolicies::BusinessHoursChecker.call(
@@ -482,6 +483,14 @@ class WidgetController < ApplicationController
     session[:widget_id] = @widget.id
   rescue ActiveRecord::RecordNotFound
     render(plain: "Widget not found", status: :not_found)
+  end
+
+  def ordered_pre_chat_custom_fields
+    return [] unless @widget.pre_chat_form
+
+    @widget.pre_chat_form.custom_field_resources
+      .sort_by { |resource| [ resource.position || Float::INFINITY, resource.created_at || Time.zone.at(0) ] }
+      .filter_map(&:custom_field)
   end
 
   def set_frame_ancestors
