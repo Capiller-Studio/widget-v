@@ -79,13 +79,18 @@ export default class extends Controller {
     if (text) formData.append("content", text)
     files.forEach((file, i) => formData.append(`attachments[${i}]`, file))
 
+    const headers = {
+      "Accept": "text/vnd.turbo-stream.html",
+      "X-CSRF-Token": this.csrfToken
+    }
+    if (this.customerSessionTokenValue) {
+      headers["X-Customer-Session-Token"] = this.customerSessionTokenValue
+    }
+
     try {
       const response = await fetch(this.urlValue, {
         method: "POST",
-        headers: {
-          "Accept": "text/vnd.turbo-stream.html",
-          "X-CSRF-Token": this.csrfToken
-        },
+        headers: headers,
         body: formData
       })
 
