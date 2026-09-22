@@ -80,5 +80,63 @@ RSpec.describe 'Widget::Customers', type: :request do
         end
       end
     end
+
+    context 'when secure identity is not enforced' do
+      it 'identifies customer by identifier without signature' do
+        account.with_shard do
+          get widget_root_path(account_id: account.id, widget_id: widget.id, identifier: 'user_unsigned_123', name: 'Bob')
+
+          expect(response).to have_http_status(:ok)
+          expect(session[:customer_id]).to be_present
+          customer = Customer.find(session[:customer_id])
+          expect(customer.name).to eq('Bob')
+        end
+      end
+
+      it 'restores existing customer by email without signature' do
+        account.with_shard do
+          existing = create(:customer, account: account, email: 'returning@example.com', name: 'Returning User')
+
+          get widget_root_path(account_id: account.id, widget_id: widget.id, email: 'returning@example.com')
+
+          expect(response).to have_http_status(:ok)
+          expect(session[:customer_id]).to eq(existing.id)
+        end
+      end
+
+      it 'does not create a new customer if email is not found' do
+        account.with_shard do
+          expect do
+            get widget_root_path(account_id: account.id, widget_id: widget.id, email: 'unknown@example.com')
+          end.not_to change(Customer, :count)
+
+          expect(response).to have_http_status(:ok)
+          expect(session[:customer_id]).to be_nil
+        end
+      end
+    end
+
+    context 'when customer is restored via X-Customer-Session-Token header' do
+      it 'restores the customer without query parameters or cookies' do
+        account.with_shard do
+          customer = create(:customer, account: account, name: 'Token Restored')
+          create(:customer_inbox, customer: customer, inbox: inbox)
+
+          token = JwtService.encode({
+            purpose: 'widget_customer_resume',
+            account_id: account.id,
+            widget_id: widget.id,
+            inbox_id: inbox.id,
+            customer_id: customer.id
+          })
+
+          get widget_root_path(account_id: account.id, widget_id: widget.id),
+              headers: { 'X-Customer-Session-Token' => token }
+
+          expect(response).to have_http_status(:ok)
+          expect(session[:customer_id]).to eq(customer.id)
+        end
+      end
+    end
   end
 end

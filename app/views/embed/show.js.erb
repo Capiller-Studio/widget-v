@@ -6,15 +6,23 @@
   var WIDGET_ID   = "<%= @widget_id %>";
   var CUSTOMER_SESSION_TOKEN_STORAGE_KEY = "deskbolic:customer-session-token:" + ACCOUNT_ID + ":" + WIDGET_ID;
 
-  // Read configuration from the script tag's data attributes
-  var scriptTag = document.currentScript;
-  var locale     = scriptTag.getAttribute("data-locale") || (navigator.language || "").split("-")[0] || "en";
-  var identifier = scriptTag.getAttribute("data-identifier") || "";
-  var signature  = scriptTag.getAttribute("data-signature") || "";
-  var email      = scriptTag.getAttribute("data-email") || "";
-  var name       = scriptTag.getAttribute("data-name") || "";
-  var position   = scriptTag.getAttribute("data-position") || "right";
-  var themeColor = scriptTag.getAttribute("data-color") || "<%= @theme_color || '#778DFF' %>";
+  // Safe script tag resolution (supports synchronous inline, async, deferred, and tag-manager loading)
+  var scriptTag = document.currentScript ||
+                  document.querySelector('script[src*="/w/' + ACCOUNT_ID + '/' + WIDGET_ID + '/embed.js"]') ||
+                  document.querySelector('script[data-widget-id="' + WIDGET_ID + '"]') ||
+                  document.querySelector('script[src*="/embed.js"]');
+
+  var getAttr = function(attr) {
+    return scriptTag ? scriptTag.getAttribute(attr) : null;
+  };
+
+  var locale     = getAttr("data-locale") || (navigator.language || "").split("-")[0] || "en";
+  var identifier = getAttr("data-identifier") || "";
+  var signature  = getAttr("data-signature") || "";
+  var email      = getAttr("data-email") || "";
+  var name       = getAttr("data-name") || "";
+  var position   = getAttr("data-position") || "right";
+  var themeColor = getAttr("data-color") || "<%= @theme_color || '#778DFF' %>";
 
   function storedCustomerSessionToken() {
     try {
@@ -156,6 +164,14 @@
       closeWidget();
     }
   });
+
+  // Global SDK interface for host applications
+  window.DeskbolicWidget = {
+    open: openWidget,
+    close: closeWidget,
+    toggle: function() { isOpen ? closeWidget() : openWidget(); },
+    isOpen: function() { return isOpen; }
+  };
 
   // Inject into DOM (deferred to avoid blocking host rendering)
   if (document.readyState === "loading") {

@@ -422,7 +422,7 @@ class WidgetController < ApplicationController
   end
 
   def pre_chat_completed?
-    session[:pre_chat_completed_widget_id].to_s == @widget.id.to_s
+    @customer.present? || session[:pre_chat_completed_widget_id].to_s == @widget.id.to_s
   end
 
   def mark_pre_chat_completed
@@ -521,11 +521,11 @@ class WidgetController < ApplicationController
     restore_customer
     return if @customer
 
-    if @widget.secure_identity_enforced? && params[:identifier].blank?
-      return render(json: { error: "HMAC Identity is required" }, status: :unauthorized)
-    end
+    if @widget.secure_identity_enforced?
+      if params[:identifier].blank?
+        return render(json: { error: "HMAC Identity is required" }, status: :unauthorized)
+      end
 
-    if params[:identifier].present?
       unless Channels::WebWidgets::IdentityVerifier.call(
         widget: @widget,
         identifier: params[:identifier],
@@ -535,8 +535,31 @@ class WidgetController < ApplicationController
       end
 
       create_or_restore_customer(params[:identifier])
-      nil
+    elsif params[:identifier].present?
+      if params[:signature].present?
+        unless Channels::WebWidgets::IdentityVerifier.call(
+          widget: @widget,
+          identifier: params[:identifier],
+          signature: params[:signature]
+        )
+          return render(json: { error: "Invalid signature" }, status: :unauthorized)
+        end
+      end
+
+      create_or_restore_customer(params[:identifier])
+    elsif params[:email].present?
+      restore_customer_by_email(params[:email])
     end
+  end
+
+  def restore_customer_by_email(email)
+    existing_customer = @account.customers.find_by(email: email.to_s.downcase.strip)
+    return unless existing_customer
+
+    @customer = existing_customer
+    @customer_inbox = @inbox.customer_inboxes.find_by(customer_id: @customer.id) ||
+                      Customers::CustomerInboxCreator.call(account: @account, customer: @customer, inbox: @inbox)
+    store_customer_in_session
   end
 
   def create_or_restore_customer(external_id)
@@ -565,6 +588,10 @@ class WidgetController < ApplicationController
       @conversation = @customer&.conversations&.find_by(id: params[:conversation_id], inbox: @inbox)
     else
       @conversation = @customer&.conversations&.where(inbox: @inbox)&.active&.first
+      if @conversation.nil? && @customer.present?
+        latest = latest_customer_conversation
+        @conversation = latest if latest && widget_reopen_window_active?(latest)
+      end
     end
   end
 
@@ -585,23 +612,25 @@ class WidgetController < ApplicationController
   end
 
   def restore_customer
-    customer_session_token = params[:customer_session_token].presence
+    customer_session_token = request.headers["X-Customer-Session-Token"].presence ||
+                             params[:customer_session_token].presence
     customer_session_token ||= session[:customer_session_token] if session[:widget_id] == @widget.id
     return if customer_session_token.blank?
 
     payload = JwtService.decode(customer_session_token)
     return unless valid_resume_payload?(payload)
 
-    @customer_inbox = @inbox.customer_inboxes
-      .joins(:customer)
-      .includes(:customer)
-      .where(customers: { account_id: @account.id })
-      .find_by(customer_id: payload[:customer_id])
-    @customer = @customer_inbox&.customer
+    @customer = @account.customers.find_by(id: payload[:customer_id])
+    return unless @customer
 
-    if @customer && @customer.locale != I18n.locale.to_s
+    @customer_inbox = @inbox.customer_inboxes.find_by(customer_id: @customer.id) ||
+                      Customers::CustomerInboxCreator.call(account: @account, customer: @customer, inbox: @inbox)
+
+    if @customer.locale != I18n.locale.to_s
       @customer.update(locale: I18n.locale)
     end
+
+    store_customer_in_session
   end
 
   def valid_resume_payload?(payload)

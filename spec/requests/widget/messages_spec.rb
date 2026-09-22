@@ -112,6 +112,33 @@ RSpec.describe 'Widget::Messages', type: :request do
       end
     end
 
+    it 'creates a message using X-Customer-Session-Token header and appends to stream' do
+      account.with_shard do
+        customer = create(:customer, account: account)
+        create(:customer_inbox, customer: customer, inbox: inbox)
+
+        token = JwtService.encode({
+          purpose: 'widget_customer_resume',
+          account_id: account.id,
+          widget_id: widget.id,
+          inbox_id: inbox.id,
+          customer_id: customer.id
+        })
+
+        expect do
+          post widget_create_message_path(account_id: account.id, widget_id: widget.id),
+               params: { content: 'Message via header token' },
+               headers: {
+                 'Accept' => 'text/vnd.turbo-stream.html',
+                 'X-Customer-Session-Token' => token
+               }
+        end.to change(Message, :count).by(1)
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include('Message via header token')
+      end
+    end
+
     it 'returns 401 unauthorized when unauthenticated customer tries to post message' do
       account.with_shard do
         widget.update!(flags: 0)
@@ -121,6 +148,56 @@ RSpec.describe 'Widget::Messages', type: :request do
              headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
 
         expect(response).to have_http_status(:unauthorized)
+      end
+    end
+  end
+
+  describe 'Sessionless & Cross-Origin Persistence' do
+    it 'bypasses pre-chat form when customer is restored via JWT token with empty session' do
+      account.with_shard do
+        pre_chat = create(:channel_contact_form, account: account)
+        widget.update!(pre_chat_form: pre_chat)
+
+        customer = create(:customer, account: account, name: 'Restored User')
+        create(:customer_inbox, customer: customer, inbox: inbox)
+
+        token = JwtService.encode({
+          purpose: 'widget_customer_resume',
+          account_id: account.id,
+          widget_id: widget.id,
+          inbox_id: inbox.id,
+          customer_id: customer.id
+        })
+
+        get widget_messages_path(account_id: account.id, widget_id: widget.id, customer_session_token: token),
+            headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).not_to include('pre-chat-fields')
+        expect(response.body).to include('main-content')
+      end
+    end
+
+    it 'reuses resolved conversation within reopen window' do
+      account.with_shard do
+        customer = create(:customer, account: account)
+        conversation = create(:conversation, account: account, inbox: inbox, status: :resolved, status_changed_at: 10.minutes.ago)
+        conversation.conversation_members.create!(member: customer, account: account)
+        create(:message, account: account, inbox: inbox, conversation: conversation, sender: customer, content: 'Earlier chat')
+
+        token = JwtService.encode({
+          purpose: 'widget_customer_resume',
+          account_id: account.id,
+          widget_id: widget.id,
+          inbox_id: inbox.id,
+          customer_id: customer.id
+        })
+
+        get widget_messages_path(account_id: account.id, widget_id: widget.id, customer_session_token: token),
+            headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include('Earlier chat')
       end
     end
   end
