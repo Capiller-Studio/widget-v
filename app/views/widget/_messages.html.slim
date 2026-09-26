@@ -25,6 +25,7 @@
         data-widget-connection-token-value=@customer_inbox&.connection_token
         data-widget-unread-count-value=@unread_count
         data-widget-url-value=widget_create_message_path(widget_route_params(conversation_id: @conversation&.id))
+        data-widget-conversation-data-value=(@pre_chat_conversation_data&.to_json if @pre_chat_conversation_data.present?)
       )
         .conversation#messages-list
           = render "widget/messages_pager"

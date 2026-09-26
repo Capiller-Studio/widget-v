@@ -71,16 +71,78 @@ html lang=I18n.locale dir=(I18n.locale.to_s.match?(/^(ar|he|fa|ur)/i) ? "rtl" : 
   - is_contact_form = @form.present? || params[:controller] == "contact_forms"
   - body_classes = [("contact-form-embed" if is_contact_form), ("has-border" if is_contact_form && params[:bordered].present?)].compact.join(" ")
   body class=body_classes.presence data-controller="live-preview"
-    - widget_customer_session_token_storage_key = @account && @widget ? "deskbolic:customer-session-token:#{@account.id}:#{@widget.id}" : nil
-    - if widget_customer_session_token_storage_key.present? && @customer
+    - if @account && @widget
       javascript:
         (function() {
-          try {
-            window.localStorage.setItem(#{widget_customer_session_token_storage_key.to_json.html_safe}, #{customer_session_token.to_json.html_safe});
-          } catch (error) {}
-          if (window.parent !== window) {
-            window.parent.postMessage({ type: "deskbolic:customer", customer_session_token: #{customer_session_token.to_json.html_safe} }, "*");
+          var customerToken = #{customer_session_token.to_json.html_safe};
+          var accountId = "#{@account.id}";
+          var widgetId = "#{@widget.id}";
+          var storageKey = "deskbolic:customer-session-token:" + accountId + ":" + widgetId;
+
+          if (customerToken) {
+            try { window.localStorage.setItem(storageKey, customerToken); } catch (e) {}
+            if (window.parent !== window) {
+              window.parent.postMessage({ type: "deskbolic:customer", customer_session_token: customerToken }, "*");
+            }
+          } else if (window.parent !== window) {
+            // Request token from host parent page (bi-directional token handshake)
+            window.parent.postMessage({ type: "deskbolic:request_token" }, "*");
           }
+
+          // Handle bi-directional messages from parent host page
+          window.addEventListener("message", function(event) {
+            var data = event.data;
+            if (!data || !data.type) return;
+
+            if (data.type === "deskbolic:token_response" && data.customer_session_token && !customerToken) {
+              var currentUrl = new URL(window.location.href);
+              if (!currentUrl.searchParams.has("customer_session_token")) {
+                currentUrl.searchParams.set("customer_session_token", data.customer_session_token);
+                window.location.replace(currentUrl.toString());
+              }
+            } else if (data.type === "deskbolic:set-customer" && data.customer) {
+              var identifyUrl = "#{widget_identify_path(widget_route_params(customer_session_token: nil))}";
+              var formData = new FormData();
+              if (data.customer.identifier) formData.append("identifier", data.customer.identifier);
+              if (data.customer.signature)  formData.append("signature", data.customer.signature);
+              if (data.customer.email)      formData.append("email", data.customer.email);
+              if (data.customer.name)       formData.append("name", data.customer.name);
+              if (data.customer.avatar_url) formData.append("avatar_url", data.customer.avatar_url);
+
+              fetch(identifyUrl, {
+                method: "POST",
+                headers: {
+                  "Accept": "text/vnd.turbo-stream.html",
+                  "X-CSRF-Token": document.querySelector("meta[name='csrf-token']") ? document.querySelector("meta[name='csrf-token']").content : ""
+                },
+                body: formData
+              }).then(function(res) {
+                return res.text();
+              }).then(function(html) {
+                if (typeof Turbo !== "undefined") {
+                  Turbo.renderStreamMessage(html);
+                } else {
+                  window.location.reload();
+                }
+              }).catch(function(err) {
+                console.error("[Deskbolic] Identify error:", err);
+              });
+            } else if (data.type === "deskbolic:reset") {
+              try { window.localStorage.removeItem(storageKey); } catch (e) {}
+              var rootUrl = "#{widget_root_path(widget_route_params(customer_session_token: nil))}";
+              window.location.replace(rootUrl);
+            } else if (data.type === "deskbolic:set-locale" && data.locale) {
+              var url = new URL(window.location.href);
+              var parts = url.pathname.split("/").filter(Boolean);
+              if (parts.length > 0 && (parts[0].length === 2 || parts[0].includes("-"))) {
+                parts[0] = data.locale;
+              } else {
+                parts.unshift(data.locale);
+              }
+              url.pathname = "/" + parts.join("/");
+              window.location.replace(url.toString());
+            }
+          });
         })();
 
     #deskbolic-widget

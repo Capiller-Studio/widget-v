@@ -16,6 +16,7 @@ export default class extends Controller {
     accountId: String,
     widgetId: String,
     customerSessionToken: String,
+    conversationData: String,
     url: String,
     cableUrl: String,
     unreadCount: { type: Number, default: 0 }
@@ -78,6 +79,9 @@ export default class extends Controller {
     const formData = new FormData()
     if (text) formData.append("content", text)
     files.forEach((file, i) => formData.append(`attachments[${i}]`, file))
+    if (this.hasConversationDataValue && this.conversationDataValue) {
+      formData.append("conversation_data", this.conversationDataValue)
+    }
 
     const headers = {
       "Accept": "text/vnd.turbo-stream.html",
@@ -100,6 +104,8 @@ export default class extends Controller {
 
       await this.renderTurboStreamResponse(response)
       this.scrollToBottom()
+      this.notifyParent("deskbolic:sound:sent")
+      this.conversationDataValue = ""
     } catch (error) {
       console.error("[Deskbolic] Network error:", error)
       this.showInlineError("Message failed to send. Please try again.")
@@ -240,6 +246,7 @@ export default class extends Controller {
 
         this.unreadCount++
         this.notifyParent("deskbolic:unread", { count: this.unreadCount })
+        this.notifyParent("deskbolic:sound:play")
       }
     }
   }

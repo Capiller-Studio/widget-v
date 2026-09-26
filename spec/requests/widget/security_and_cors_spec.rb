@@ -111,7 +111,16 @@ RSpec.describe 'Widget::SecurityAndCors', type: :request do
         ), headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
 
         expect(response).to have_http_status(:ok)
-        expect(session[:customer_id]).to be_present
+        expect(response.body).to include('data-widget-customer-session-token-value')
+        expect(account.customers.find_by(external_id: identifier)&.name).to eq('Verified Customer')
+      end
+    end
+
+    it 'does not emit a Set-Cookie session header on responses (stateless)' do
+      account.with_shard do
+        get widget_root_path(account_id: account.id, widget_id: widget.id)
+        expect(response).to have_http_status(:ok)
+        expect(response.headers['Set-Cookie']).to be_nil
       end
     end
   end
