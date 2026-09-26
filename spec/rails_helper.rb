@@ -66,6 +66,11 @@ RSpec.configure do |config|
     DatabaseCleaner.start
   end
 
+  config.after(:each, type: :feature) do
+    Capybara.reset_sessions!
+    Capybara.current_session.driver.reset! if Capybara.current_session.respond_to?(:driver)
+  end
+
   config.after do
     DatabaseCleaner.clean
   end

@@ -20,7 +20,9 @@ RSpec.describe 'Widget::Messages', type: :request do
 
         expect(response).to have_http_status(:ok)
         expect(response.body).to include('turbo-stream action="update" target="widget"')
-        expect(session[:customer_id]).to be_present
+        expect(response.body).to include('data-widget-customer-session-token-value')
+        anon_customer = account.customers.where("external_id LIKE ?", "anon-%").last
+        expect(anon_customer).to be_present
       end
     end
 

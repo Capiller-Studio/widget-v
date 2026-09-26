@@ -5,6 +5,7 @@
   var ACCOUNT_ID  = "<%= @account_id %>";
   var WIDGET_ID   = "<%= @widget_id %>";
   var CUSTOMER_SESSION_TOKEN_STORAGE_KEY = "deskbolic:customer-session-token:" + ACCOUNT_ID + ":" + WIDGET_ID;
+  var CUSTOMER_DATA_STORAGE_KEY = "deskbolic:customer-data:" + ACCOUNT_ID + ":" + WIDGET_ID;
 
   // Safe script tag resolution (supports synchronous inline, async, deferred, and tag-manager loading)
   var scriptTag = document.currentScript ||
@@ -16,20 +17,184 @@
     return scriptTag ? scriptTag.getAttribute(attr) : null;
   };
 
-  var locale     = getAttr("data-locale") || (navigator.language || "").split("-")[0] || "en";
-  var identifier = getAttr("data-identifier") || "";
-  var signature  = getAttr("data-signature") || "";
-  var email      = getAttr("data-email") || "";
-  var name       = getAttr("data-name") || "";
-  var position   = getAttr("data-position") || "right";
-  var themeColor = getAttr("data-color") || "<%= @theme_color || '#778DFF' %>";
+  var settings = window.deskbolicSettings || window.chatwootSettings || {};
 
+  var locale      = getAttr("data-locale") || settings.locale || (navigator.language || "").split("-")[0] || "en";
+  var identifier  = getAttr("data-identifier") || settings.identifier || "";
+  var signature   = getAttr("data-signature") || settings.signature || settings.identifier_hash || "";
+  var email       = getAttr("data-email") || settings.email || "";
+  var name        = getAttr("data-name") || settings.name || "";
+  var position    = getAttr("data-position") || settings.position || "right";
+  var themeColor  = getAttr("data-color") || settings.themeColor || "<%= @theme_color || '#778DFF' %>";
+  var baseDomain  = getAttr("data-base-domain") || settings.baseDomain || "";
+  var enableSound = (getAttr("data-enable-sound") !== "false") && (settings.enableSound !== false);
+
+  // --- Cookie Helpers (for baseDomain cross-subdomain sharing) ---
+  function getCookie(cookieName) {
+    var match = document.cookie.match(new RegExp("(^|;\\s*)" + cookieName + "=([^;]*)"));
+    return match ? decodeURIComponent(match[2]) : null;
+  }
+
+  function setCookie(cookieName, value, days, domain) {
+    var expires = "";
+    if (days) {
+      var d = new Date();
+      d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
+      expires = "; expires=" + d.toUTCString();
+    }
+    var domainStr = domain ? "; domain=" + domain : "";
+    document.cookie = cookieName + "=" + encodeURIComponent(value || "") + expires + "; path=/" + domainStr + "; SameSite=Lax";
+  }
+
+  function clearCookie(cookieName, domain) {
+    var domainStr = domain ? "; domain=" + domain : "";
+    document.cookie = cookieName + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/" + domainStr + "; SameSite=Lax";
+  }
+
+  // --- Storage Accessors ---
   function storedCustomerSessionToken() {
     try {
-      return window.localStorage.getItem(CUSTOMER_SESSION_TOKEN_STORAGE_KEY) || "";
-    } catch (error) {
-      return "";
+      var token = window.localStorage.getItem(CUSTOMER_SESSION_TOKEN_STORAGE_KEY);
+      if (token) return token;
+    } catch (error) {}
+
+    if (baseDomain) {
+      var cookieToken = getCookie(CUSTOMER_SESSION_TOKEN_STORAGE_KEY);
+      if (cookieToken) return cookieToken;
     }
+    return "";
+  }
+
+  function setStoredCustomerSessionToken(token) {
+    try {
+      window.localStorage.setItem(CUSTOMER_SESSION_TOKEN_STORAGE_KEY, token);
+    } catch (error) {}
+
+    if (baseDomain) {
+      setCookie(CUSTOMER_SESSION_TOKEN_STORAGE_KEY, token, 30, baseDomain);
+    }
+  }
+
+  function clearStoredCustomerSessionToken() {
+    try {
+      window.localStorage.removeItem(CUSTOMER_SESSION_TOKEN_STORAGE_KEY);
+      window.localStorage.removeItem(CUSTOMER_DATA_STORAGE_KEY);
+    } catch (error) {}
+
+    if (baseDomain) {
+      clearCookie(CUSTOMER_SESSION_TOKEN_STORAGE_KEY, baseDomain);
+      clearCookie(CUSTOMER_DATA_STORAGE_KEY, baseDomain);
+    }
+  }
+
+  function storedCustomerData() {
+    try {
+      var raw = window.localStorage.getItem(CUSTOMER_DATA_STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (error) {}
+
+    if (baseDomain) {
+      var cookieRaw = getCookie(CUSTOMER_DATA_STORAGE_KEY);
+      if (cookieRaw) {
+        try { return JSON.parse(cookieRaw); } catch (e) {}
+      }
+    }
+    return null;
+  }
+
+  function setStoredCustomerData(data) {
+    var serialized = JSON.stringify(data || {});
+    try {
+      window.localStorage.setItem(CUSTOMER_DATA_STORAGE_KEY, serialized);
+    } catch (error) {}
+
+    if (baseDomain) {
+      setCookie(CUSTOMER_DATA_STORAGE_KEY, serialized, 30, baseDomain);
+    }
+  }
+
+  // --- Web Audio API Chime (Zero external network requests / CORS issues) ---
+  var audioCtx = null;
+  function getAudioContext() {
+    if (!audioCtx) {
+      var AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtxClass) {
+        audioCtx = new AudioCtxClass();
+      }
+    }
+    if (audioCtx && audioCtx.state === "suspended") {
+      audioCtx.resume();
+    }
+    return audioCtx;
+  }
+
+  // Unlock AudioContext on first user interaction to comply with browser autoplay policy
+  document.addEventListener("click", function unlockAudio() {
+    getAudioContext();
+  }, { once: true, passive: true });
+
+  var lastSoundTime = 0;
+
+  function playNotificationSound() {
+    if (!enableSound) return;
+    var nowMs = Date.now();
+    if (nowMs - lastSoundTime < 2000) return;
+    lastSoundTime = nowMs;
+
+    try {
+      var ctx = getAudioContext();
+      if (!ctx) return;
+
+      var now = ctx.currentTime;
+
+      // Tone 1: C5 (523.25 Hz)
+      var osc1 = ctx.createOscillator();
+      var gain1 = ctx.createGain();
+      osc1.type = "sine";
+      osc1.frequency.setValueAtTime(523.25, now);
+      gain1.gain.setValueAtTime(0.12, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.18);
+
+      // Tone 2: E5 (659.25 Hz) with gentle delay
+      var osc2 = ctx.createOscillator();
+      var gain2 = ctx.createGain();
+      osc2.type = "sine";
+      osc2.frequency.setValueAtTime(659.25, now + 0.1);
+      gain2.gain.setValueAtTime(0.15, now + 0.1);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.1);
+      osc2.stop(now + 0.32);
+    } catch (error) {}
+  }
+
+  function playSentSound() {
+    if (!enableSound) return;
+    try {
+      var ctx = getAudioContext();
+      if (!ctx) return;
+
+      var now = ctx.currentTime;
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.exponentialRampToValueAtTime(220, now + 0.04);
+
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.04);
+    } catch (error) {}
   }
 
   // Build the iframe src (NOT set until first open)
@@ -37,11 +202,18 @@
     var src = WIDGET_HOST + "/" + locale + "/w/" + ACCOUNT_ID + "/" + WIDGET_ID;
     var params = [];
     var customerSessionToken = storedCustomerSessionToken();
+    var customerData = storedCustomerData() || {};
+
+    var activeIdentifier = identifier || customerData.identifier;
+    var activeSignature  = signature  || customerData.signature;
+    var activeEmail      = email      || customerData.email;
+    var activeName       = name       || customerData.name;
+
     if (customerSessionToken) params.push("customer_session_token=" + encodeURIComponent(customerSessionToken));
-    if (identifier) params.push("identifier=" + encodeURIComponent(identifier));
-    if (signature)  params.push("signature=" + encodeURIComponent(signature));
-    if (email)      params.push("email=" + encodeURIComponent(email));
-    if (name)       params.push("name=" + encodeURIComponent(name));
+    if (activeIdentifier) params.push("identifier=" + encodeURIComponent(activeIdentifier));
+    if (activeSignature)  params.push("signature=" + encodeURIComponent(activeSignature));
+    if (activeEmail)      params.push("email=" + encodeURIComponent(activeEmail));
+    if (activeName)       params.push("name=" + encodeURIComponent(activeName));
     if (params.length > 0) src += "?" + params.join("&");
     return src;
   }
@@ -111,6 +283,10 @@
     unreadCount = 0;
     badge.style.display = "none";
     badge.textContent = "";
+
+    try {
+      window.dispatchEvent(new CustomEvent("deskbolic:opened"));
+    } catch (e) {}
   }
 
   function closeWidget() {
@@ -119,6 +295,10 @@
     container.style.transform = "translateY(10px)";
     bubble.style.transform = "scale(1)";
     setTimeout(function() { container.style.display = "none"; }, 300);
+
+    try {
+      window.dispatchEvent(new CustomEvent("deskbolic:closed"));
+    } catch (e) {}
   }
 
   bubble.addEventListener("click", function() {
@@ -141,7 +321,7 @@
     if (!isOpen) bubble.style.transform = "scale(1)";
   });
 
-  // Listen for messages from the iframe (unread count, close requests)
+  // --- Bi-directional Message Listener ---
   window.addEventListener("message", function(event) {
     if (event.origin !== WIDGET_HOST) return;
 
@@ -149,29 +329,161 @@
     if (!data || !data.type) return;
 
     if (data.type === "deskbolic:unread") {
-      if (!isOpen) {
-        unreadCount = data.count || 0;
-        if (unreadCount > 0) {
+      unreadCount = data.count || 0;
+      try {
+        window.dispatchEvent(new CustomEvent("deskbolic:unread-count-changed", { detail: { count: unreadCount } }));
+      } catch (e) {}
+      if (unreadCount > 0) {
+        if (!isOpen) {
           badge.textContent = unreadCount > 9 ? "9+" : unreadCount;
           badge.style.display = "flex";
         }
+        var isTabHiddenOrUnfocused = document.hidden || (typeof document.hasFocus === "function" && !document.hasFocus());
+        if (!isOpen || isTabHiddenOrUnfocused) {
+          playNotificationSound();
+        }
       }
+    } else if (data.type === "deskbolic:sound:play") {
+      var isTabHiddenOrUnfocused = document.hidden || (typeof document.hasFocus === "function" && !document.hasFocus());
+      if (!isOpen || isTabHiddenOrUnfocused) {
+        playNotificationSound();
+      }
+    } else if (data.type === "deskbolic:sound:sent") {
+      playSentSound();
     } else if (data.type === "deskbolic:customer" && data.customer_session_token) {
-      try {
-        window.localStorage.setItem(CUSTOMER_SESSION_TOKEN_STORAGE_KEY, data.customer_session_token);
-      } catch (error) {}
+      setStoredCustomerSessionToken(data.customer_session_token);
+    } else if (data.type === "deskbolic:request_token") {
+      // Bi-directional token resolution: iframe requested token from parent
+      var token = storedCustomerSessionToken();
+      if (event.source && typeof event.source.postMessage === "function") {
+        event.source.postMessage({
+          type: "deskbolic:token_response",
+          customer_session_token: token
+        }, event.origin || WIDGET_HOST);
+      }
     } else if (data.type === "deskbolic:close") {
       closeWidget();
     }
   });
 
-  // Global SDK interface for host applications
+  // --- SDK Methods ---
+  function setCustomer(newIdentifier, customerData) {
+    if (typeof newIdentifier === "object" && newIdentifier !== null && !customerData) {
+      customerData = newIdentifier;
+      newIdentifier = customerData.identifier;
+    }
+    customerData = customerData || {};
+    identifier = newIdentifier || customerData.identifier || "";
+    signature  = customerData.signature || customerData.identifier_hash || "";
+    email      = customerData.email || "";
+    name       = customerData.name || "";
+
+    var payload = {
+      identifier: identifier,
+      signature: signature,
+      email: email,
+      name: name,
+      avatar_url: customerData.avatar_url || ""
+    };
+
+    setStoredCustomerData(payload);
+
+    // If iframe is loaded, notify it immediately via postMessage
+    if (isLoaded && iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage({
+        type: "deskbolic:set-customer",
+        customer: payload
+      }, WIDGET_HOST);
+    }
+  }
+
+  function resetCustomer() {
+    clearStoredCustomerSessionToken();
+    identifier = "";
+    signature  = "";
+    email      = "";
+    name       = "";
+
+    closeWidget();
+    unreadCount = 0;
+    badge.style.display = "none";
+    badge.textContent = "";
+
+    if (isLoaded && iframe) {
+      if (iframe.contentWindow) {
+        try {
+          iframe.contentWindow.postMessage({ type: "deskbolic:reset" }, WIDGET_HOST);
+        } catch (e) {}
+      }
+      iframe.src = "about:blank";
+      isLoaded = false;
+    }
+  }
+
+  function setLocale(newLocale) {
+    if (!newLocale) return;
+    locale = newLocale;
+    if (isLoaded && iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage({
+        type: "deskbolic:set-locale",
+        locale: newLocale
+      }, WIDGET_HOST);
+    }
+  }
+
+  // Global SDK interface for host applications (Deskbolic & Chatwoot compatible)
   window.DeskbolicWidget = {
     open: openWidget,
     close: closeWidget,
     toggle: function() { isOpen ? closeWidget() : openWidget(); },
-    isOpen: function() { return isOpen; }
+    isOpen: function() { return isOpen; },
+    setCustomer: setCustomer,
+    setUser: setCustomer,           // Compatibility alias
+    resetCustomer: resetCustomer,
+    reset: resetCustomer,           // Compatibility alias
+    setLocale: setLocale,
+    playNotificationSound: playNotificationSound,
+    playSentSound: playSentSound,
+    mute: function() { enableSound = false; },
+    unmute: function() { enableSound = true; },
+    isMuted: function() { return !enableSound; }
   };
+
+  // Callable function SDK + object SDK
+  function deskbolicSdk(method) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    if (typeof window.DeskbolicWidget[method] === "function") {
+      return window.DeskbolicWidget[method].apply(window.DeskbolicWidget, args);
+    }
+  }
+  for (var key in window.DeskbolicWidget) {
+    if (Object.prototype.hasOwnProperty.call(window.DeskbolicWidget, key)) {
+      deskbolicSdk[key] = window.DeskbolicWidget[key];
+    }
+  }
+
+  // Drain any queued commands pushed before embed.js was loaded
+  var existingDeskbolic = window.Deskbolic;
+  if (existingDeskbolic && Array.isArray(existingDeskbolic.q)) {
+    var queue = existingDeskbolic.q;
+    for (var i = 0; i < queue.length; i++) {
+      var item = queue[i];
+      if (item && item.length > 0) {
+        var action = item[0];
+        var itemArgs = Array.prototype.slice.call(item, 1);
+        if (typeof window.DeskbolicWidget[action] === "function") {
+          window.DeskbolicWidget[action].apply(window.DeskbolicWidget, itemArgs);
+        }
+      }
+    }
+  }
+
+  window.Deskbolic = deskbolicSdk;
+
+  // Dispatch ready event for host applications
+  try {
+    window.dispatchEvent(new CustomEvent("deskbolic:ready", { detail: { widget: window.Deskbolic } }));
+  } catch (e) {}
 
   // Inject into DOM (deferred to avoid blocking host rendering)
   if (document.readyState === "loading") {

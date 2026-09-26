@@ -4,6 +4,7 @@ class WidgetController < ApplicationController
   layout "widget"
 
   protect_from_forgery with: :null_session
+  after_action :skip_session_cookie
   helper_method :customer_session_token
 
   before_action :set_widget
@@ -47,7 +48,6 @@ class WidgetController < ApplicationController
           params: { locale: I18n.locale }
         )
         @customer_inbox = @customer&.customer_inboxes&.find_by(inbox: @inbox)
-        store_customer_in_session
       else
         return render(plain: "Anonymous chat is disabled.", status: :unauthorized)
       end
@@ -152,14 +152,15 @@ class WidgetController < ApplicationController
       []
     end
 
+    conversation_data = parse_conversation_data(params[:conversation_data])
+    conversation_data = @jwt_payload&.dig("conversation_data") || @jwt_payload&.dig(:conversation_data) if conversation_data.blank?
+    conversation_data ||= {}
+
     @message = create_widget_message(
       content: params[:content],
       attachments: attachments_list,
-      conversation_data: session[:pre_chat_conversation_data] || {}
+      conversation_data: conversation_data
     )
-
-    # Clear it from session so we don't accidentally reuse it for subsequent conversations
-    session.delete(:pre_chat_conversation_data)
 
     respond_to do |format|
       format.turbo_stream do
@@ -319,10 +320,7 @@ class WidgetController < ApplicationController
       @customer.save
     end
 
-    store_customer_in_session
-    mark_pre_chat_completed
-
-    session[:pre_chat_conversation_data] = conversation_data
+    @pre_chat_conversation_data = conversation_data
 
     # If they mapped message.content, create the conversation and message immediately
     if message_content.present?
@@ -330,7 +328,8 @@ class WidgetController < ApplicationController
         web_widget_channel: @widget,
         contact_params: customer_contact_params,
         content: message_content,
-        attachments: []
+        attachments: [],
+        conversation_data: @pre_chat_conversation_data
       )
     end
 
@@ -348,7 +347,89 @@ class WidgetController < ApplicationController
     end
   end
 
+  def identify
+    previous_customer = @customer
+
+    if params[:identifier].present? || params[:email].present?
+      if @widget.secure_identity_enforced?
+        if params[:identifier].blank?
+          return render(json: { error: "HMAC Identity is required" }, status: :unauthorized)
+        end
+
+        unless Channels::WebWidgets::IdentityVerifier.call(
+          widget: @widget,
+          identifier: params[:identifier],
+          signature: params[:signature]
+        )
+          return render(json: { error: "Invalid signature" }, status: :unauthorized)
+        end
+
+        create_or_restore_customer(params[:identifier])
+      elsif params[:identifier].present?
+        if params[:signature].present?
+          unless Channels::WebWidgets::IdentityVerifier.call(
+            widget: @widget,
+            identifier: params[:identifier],
+            signature: params[:signature]
+          )
+            return render(json: { error: "Invalid signature" }, status: :unauthorized)
+          end
+        end
+
+        create_or_restore_customer(params[:identifier])
+      elsif params[:email].present?
+        restore_customer_by_email(params[:email])
+      end
+    end
+
+    if @customer.present?
+      updates = {}
+      updates[:name] = params[:name] if params[:name].present? && @customer.name.blank?
+      updates[:email] = params[:email].downcase.strip if params[:email].present? && @customer.email.blank?
+      @customer.update(updates) if updates.any?
+
+      if previous_customer.present? && previous_customer.id != @customer.id && previous_customer.external_id&.start_with?("anon-")
+        stitch_anonymous_conversations(previous_customer, @customer)
+      end
+    end
+
+    mark_pre_chat_completed if @customer.present?
+
+    find_or_set_conversation
+    messages_query = @conversation&.messages&.global&.includes(:sender, attachments: { file_attachment: :blob })&.order(created_at: :desc) || Message.none
+    @pagy, @messages = pagy(messages_query, items: 20)
+    @messages = @messages.reverse
+
+    respond_to do |format|
+      format.turbo_stream do
+        render(turbo_stream: turbo_stream.update("widget", partial: "widget/messages"))
+      end
+      format.json do
+        render json: {
+          success: true,
+          customer_session_token: customer_session_token,
+          customer: { id: @customer&.id, name: @customer&.name, email: @customer&.email }
+        }
+      end
+      format.html { redirect_to(widget_messages_path) }
+    end
+  end
+
   private
+
+  def stitch_anonymous_conversations(from_customer, to_customer)
+    from_customer.conversations.where(inbox: @inbox).find_each do |conv|
+      cm = conv.conversation_members.find_by(member: from_customer)
+      if cm
+        if conv.conversation_members.exists?(member: to_customer)
+          cm.destroy
+        else
+          cm.update(member: to_customer)
+        end
+      end
+      conv.messages.where(sender: from_customer).update_all(sender_id: to_customer.id)
+    end
+  end
 
   def append_widget_message_stream(message)
     turbo_stream.append("messages-list", partial: "widget/message", locals: { message: message })
@@ -422,11 +503,11 @@ class WidgetController < ApplicationController
   end
 
   def pre_chat_completed?
-    @customer.present? || session[:pre_chat_completed_widget_id].to_s == @widget.id.to_s
+    @customer.present?
   end
 
   def mark_pre_chat_completed
-    session[:pre_chat_completed_widget_id] = @widget.id
+    # Stateless: presence of @customer defines pre-chat completion
   end
 
   def render_search_results
@@ -478,9 +559,6 @@ class WidgetController < ApplicationController
     return render(plain: "Widget not configured", status: :service_unavailable) unless @inbox
 
     # @agents = @inbox.users.includes(avatar_attachment: :blob).limit(3)
-
-    session[:account_id] = @account.id
-    session[:widget_id] = @widget.id
   rescue ActiveRecord::RecordNotFound
     render(plain: "Widget not found", status: :not_found)
   end
@@ -559,7 +637,6 @@ class WidgetController < ApplicationController
     @customer = existing_customer
     @customer_inbox = @inbox.customer_inboxes.find_by(customer_id: @customer.id) ||
                       Customers::CustomerInboxCreator.call(account: @account, customer: @customer, inbox: @inbox)
-    store_customer_in_session
   end
 
   def create_or_restore_customer(external_id)
@@ -577,7 +654,6 @@ class WidgetController < ApplicationController
     )
 
     @customer_inbox = @customer&.customer_inboxes&.find_by(inbox: @inbox)
-    store_customer_in_session
     @customer
   end
 
@@ -597,7 +673,7 @@ class WidgetController < ApplicationController
 
   def customer_contact_params
     {
-      external_id: @customer_inbox&.external_id || widget_customer_identifier || session[:customer_external_id] || @customer&.external_id,
+      external_id: @customer_inbox&.external_id || widget_customer_identifier || @customer&.external_id,
       email: @customer&.email || params[:email],
       name: @customer&.name || params[:name],
       first_name: @customer&.first_name || params[:first_name],
@@ -614,12 +690,12 @@ class WidgetController < ApplicationController
   def restore_customer
     customer_session_token = request.headers["X-Customer-Session-Token"].presence ||
                              params[:customer_session_token].presence
-    customer_session_token ||= session[:customer_session_token] if session[:widget_id] == @widget.id
     return if customer_session_token.blank?
 
     payload = JwtService.decode(customer_session_token)
     return unless valid_resume_payload?(payload)
 
+    @jwt_payload = payload
     @customer = @account.customers.find_by(id: payload[:customer_id])
     return unless @customer
 
@@ -629,8 +705,6 @@ class WidgetController < ApplicationController
     if @customer.locale != I18n.locale.to_s
       @customer.update(locale: I18n.locale)
     end
-
-    store_customer_in_session
   end
 
   def valid_resume_payload?(payload)
@@ -642,39 +716,46 @@ class WidgetController < ApplicationController
       payload[:customer_id].present?
   end
 
-  def store_customer_in_session
-    return unless @customer
-
-    session[:customer_id] = @customer.id
-    session[:customer_external_id] = @customer_inbox&.external_id
-    session[:customer_session_token] = customer_session_token
-  end
-
   def widget_customer_identifier
     params[:identifier].presence || @customer&.external_id
   end
 
   def widget_account_id
-    params[:account_id].presence || session[:account_id]
+    params[:account_id].presence
   end
 
   def widget_id
-    params[:widget_id].presence || session[:widget_id]
+    params[:widget_id].presence
   end
 
   def customer_session_token
     return unless @customer && @customer_inbox
 
-    @customer_session_token ||= JwtService.encode(
-      {
-        purpose: "widget_customer_resume",
-        account_id: @account.id,
-        widget_id: @widget.id,
-        inbox_id: @inbox.id,
-        customer_id: @customer.id
-      },
-      expiry: 30.days
-    )
+    payload = {
+      purpose: "widget_customer_resume",
+      account_id: @account.id,
+      widget_id: @widget.id,
+      inbox_id: @inbox.id,
+      customer_id: @customer.id
+    }
+    payload[:conversation_data] = @pre_chat_conversation_data if @pre_chat_conversation_data.present?
+
+    @customer_session_token ||= JwtService.encode(payload, expiry: 30.days)
+  end
+
+  def parse_conversation_data(data)
+    return nil if data.blank?
+    if data.is_a?(String)
+      JSON.parse(data).with_indifferent_access rescue nil
+    elsif data.respond_to?(:to_unsafe_h)
+      data.to_unsafe_h.with_indifferent_access
+    elsif data.is_a?(Hash)
+      data.with_indifferent_access
+    end
+  end
+
+  def skip_session_cookie
+    request.session_options[:skip] = true
   end
 
   def generate_anonymous_external_id

@@ -24,6 +24,7 @@ Rails.application.routes.draw do
       get "knowledge-base/categories/:category_id/articles/:article_id", to: "widget#article", as: :help_article
       get "search",         to: "widget#search",         as: :search
       post "contact",       to: "widget#create_customer", as: :create_customer
+      post "identify",      to: "widget#identify",        as: :identify
     end
 
     # Form entry point: embed.deskbolic.com/:locale/f/:account_id/:form_id
