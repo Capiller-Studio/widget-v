@@ -58,5 +58,5 @@
     .widget-resolved-message hidden=true
       = t('widget.conversations.resolved_message', default: 'Conversation resolved, please start a new conversation.')
   - else
-    = button_to widget_messages_path(widget_route_params(conversation_id: conversation.id, format: :turbo_stream)), method: :get, class: "widget-conv-item", form: { data: { turbo_stream: true } } do
+    = button_to widget_messages_path(widget_route_params(conversation_id: conversation.id, format: :turbo_stream, from: :conversations)), method: :get, class: "widget-conv-item", form: { data: { turbo_stream: true } } do
       = conversation_item_content

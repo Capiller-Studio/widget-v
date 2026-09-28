@@ -7,8 +7,8 @@ class WidgetController < ApplicationController
   after_action :skip_session_cookie
   helper_method :customer_session_token
 
-  before_action :set_widget
   around_action :set_sharding_context
+  before_action :set_widget
   before_action :set_frame_ancestors
   before_action :identify_customer
   before_action :set_locale
@@ -16,6 +16,17 @@ class WidgetController < ApplicationController
   before_action :set_unread_count
 
   def index
+    if @customer.present?
+      find_or_set_conversation
+      if @conversation.present?
+        @resume_conversation = true
+        messages_query = @conversation.messages.global.includes(:sender, attachments: { file_attachment: :blob }).order(created_at: :desc)
+        @pagy, @messages = pagy(messages_query, items: 20)
+        @messages = @messages.reverse
+        return
+      end
+    end
+
     load_home_categories
   end
 

@@ -73,6 +73,7 @@ RSpec.configure do |config|
 
   config.after do
     DatabaseCleaner.clean
+    I18n.locale = I18n.default_locale
   end
 
   config.infer_spec_type_from_file_location!

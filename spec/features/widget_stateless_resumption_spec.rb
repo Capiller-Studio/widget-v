@@ -90,6 +90,51 @@ RSpec.describe 'Widget Stateless Customer Resumption Flow', type: :feature do
         expect(payload['customer_id']).to eq(customer.id)
       end
     end
+
+    it 'auto-resumes active conversation directly on root index when session token is provided' do
+      account.with_shard do
+        conv = create(:conversation, account: account, inbox: inbox, status: :active)
+        conv.conversation_members.create!(conversation: conv, member: customer, account: account)
+        create(:message, conversation: conv, account: account, inbox: inbox, sender: customer, content: 'Active compiler question')
+
+        page.driver.header 'Accept', 'text/html'
+        visit widget_root_path(account_id: account.id, widget_id: widget.id, customer_session_token: session_token)
+
+        expect(page.status_code).to eq(200)
+        expect(page.body).to include('Active compiler question')
+        expect(page.body).not_to include('Start conversation')
+      end
+    end
+
+    it 'routes back button to home by default, and to conversations when from: conversations' do
+      account.with_shard do
+        conv = create(:conversation, account: account, inbox: inbox, status: :active)
+        conv.conversation_members.create!(conversation: conv, member: customer, account: account)
+
+        # Default: back goes to home
+        page.driver.header 'Accept', 'text/vnd.turbo-stream.html'
+        visit widget_messages_path(account_id: account.id, widget_id: widget.id, customer_session_token: session_token)
+        expect(page.body).to include(widget_home_path(locale: :en, account_id: account.id, widget_id: widget.id, format: :turbo_stream))
+
+        # From conversations: back goes to conversations
+        visit widget_messages_path(account_id: account.id, widget_id: widget.id, customer_session_token: session_token, from: 'conversations')
+        expect(page.body).to include(widget_conversations_path(locale: :en, account_id: account.id, widget_id: widget.id, format: :turbo_stream))
+      end
+    end
+
+    it 'renders customer conversations list when navigating with customer_session_token' do
+      account.with_shard do
+        conv = create(:conversation, account: account, inbox: inbox, status: :resolved, title: 'Resolved Billing Thread')
+        conv.conversation_members.create!(conversation: conv, member: customer, account: account)
+
+        page.driver.header 'Accept', 'text/vnd.turbo-stream.html'
+        visit widget_conversations_path(account_id: account.id, widget_id: widget.id, customer_session_token: session_token)
+
+        expect(page.status_code).to eq(200)
+        expect(page.body).to include('Resolved Billing Thread')
+        expect(page.body).not_to include('No conversations')
+      end
+    end
   end
 
   describe '100% Zero-Cookie Guarantee' do

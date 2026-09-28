@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
 class ApplicationController < ActionController::Base
-  # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
-  allow_browser versions: :modern
+  # NOTE: Do NOT add `allow_browser` here. The widget runs inside iframes
+  # on third-party customer websites where we cannot control browser versions.
+  # Blocking older browsers (Safari <17.2, in-app WebViews, etc.) would break
+  # the widget for those visitors.
 
   include Pagy::Backend
 
