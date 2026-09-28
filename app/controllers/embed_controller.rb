@@ -12,10 +12,15 @@ class EmbedController < ApplicationController
     @account_id = params[:account_id]
     @widget_id  = params[:widget_id]
 
-    widget = Channel::WebWidget.find_by(account_id: @account_id, id: @widget_id)
-    @theme_color = widget&.theme_color
-    if widget&.account&.feature_enabled?(:custom_branding) && widget&.custom_branding? && widget&.launcher_icon&.attached?
-      @widget_logo_url = rails_blob_url(widget.scaled_launcher_icon)
+    account = Account.find_by(id: @account_id)
+    if account
+      account.with_shard do
+        widget = Channel::WebWidget.find_by(account_id: @account_id, id: @widget_id)
+        @theme_color = widget&.theme_color
+        if widget&.account&.feature_enabled?(:custom_branding) && widget&.custom_branding? && widget&.launcher_icon&.attached?
+          @widget_logo_url = rails_blob_url(widget.scaled_launcher_icon)
+        end
+      end
     end
 
     response.headers["Content-Type"] = "application/javascript"

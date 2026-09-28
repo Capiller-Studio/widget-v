@@ -51,28 +51,27 @@
     document.cookie = cookieName + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/" + domainStr + "; SameSite=Lax";
   }
 
-  // --- Storage Accessors ---
+  // --- Storage Accessors (Dual-layer: localStorage + Host Cookie fallback) ---
   function storedCustomerSessionToken() {
     try {
       var token = window.localStorage.getItem(CUSTOMER_SESSION_TOKEN_STORAGE_KEY);
       if (token) return token;
     } catch (error) {}
 
-    if (baseDomain) {
-      var cookieToken = getCookie(CUSTOMER_SESSION_TOKEN_STORAGE_KEY);
-      if (cookieToken) return cookieToken;
-    }
+    var cookieToken = getCookie(CUSTOMER_SESSION_TOKEN_STORAGE_KEY);
+    if (cookieToken) return cookieToken;
+
     return "";
   }
 
   function setStoredCustomerSessionToken(token) {
+    if (!token) return;
     try {
       window.localStorage.setItem(CUSTOMER_SESSION_TOKEN_STORAGE_KEY, token);
     } catch (error) {}
 
-    if (baseDomain) {
-      setCookie(CUSTOMER_SESSION_TOKEN_STORAGE_KEY, token, 30, baseDomain);
-    }
+    // Always set first-party cookie on current host domain as reliable fallback (Chatwoot parity)
+    setCookie(CUSTOMER_SESSION_TOKEN_STORAGE_KEY, token, 30, baseDomain || null);
   }
 
   function clearStoredCustomerSessionToken() {
@@ -81,10 +80,8 @@
       window.localStorage.removeItem(CUSTOMER_DATA_STORAGE_KEY);
     } catch (error) {}
 
-    if (baseDomain) {
-      clearCookie(CUSTOMER_SESSION_TOKEN_STORAGE_KEY, baseDomain);
-      clearCookie(CUSTOMER_DATA_STORAGE_KEY, baseDomain);
-    }
+    clearCookie(CUSTOMER_SESSION_TOKEN_STORAGE_KEY, baseDomain || null);
+    clearCookie(CUSTOMER_DATA_STORAGE_KEY, baseDomain || null);
   }
 
   function storedCustomerData() {
@@ -321,9 +318,26 @@
     if (!isOpen) bubble.style.transform = "scale(1)";
   });
 
+  function isTrustedWidgetOrigin(origin) {
+    if (!origin) return false;
+    if (origin === WIDGET_HOST) return true;
+    try {
+      if (scriptTag && scriptTag.src && new URL(scriptTag.src).origin === origin) return true;
+      if (iframe && iframe.src && new URL(iframe.src).origin === origin) return true;
+      var widgetHostUrl = new URL(WIDGET_HOST);
+      var originUrl = new URL(origin);
+      if (originUrl.hostname === widgetHostUrl.hostname) return true;
+      if ((originUrl.hostname === "localhost" || originUrl.hostname === "127.0.0.1") &&
+          (widgetHostUrl.hostname === "localhost" || widgetHostUrl.hostname === "127.0.0.1")) {
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+
   // --- Bi-directional Message Listener ---
   window.addEventListener("message", function(event) {
-    if (event.origin !== WIDGET_HOST) return;
+    if (!isTrustedWidgetOrigin(event.origin)) return;
 
     var data = event.data;
     if (!data || !data.type) return;
@@ -359,7 +373,7 @@
         event.source.postMessage({
           type: "deskbolic:token_response",
           customer_session_token: token
-        }, event.origin || WIDGET_HOST);
+        }, event.origin || "*");
       }
     } else if (data.type === "deskbolic:close") {
       closeWidget();

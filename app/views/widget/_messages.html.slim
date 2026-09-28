@@ -1,7 +1,8 @@
 .chat-screen
   .homepage
     .widget-chat-header
-      = button_to widget_conversations_path(widget_route_params(format: :turbo_stream)), method: :get, class: "widget-chat-back", form: { data: { turbo_stream: true } } do
+      - back_target = params[:from].to_s == "conversations" ? widget_conversations_path(widget_route_params(format: :turbo_stream)) : widget_home_path(widget_route_params(format: :turbo_stream))
+      = button_to back_target, method: :get, class: "widget-chat-back", form: { data: { turbo_stream: true } } do
         = inline_svg_tag("back_arrow.svg", class: "widget-chat-back-icon")
       .widget-chat-header-avatars
         - @agents.each do |agent|

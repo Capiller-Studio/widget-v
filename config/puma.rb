@@ -51,3 +51,6 @@ plugin :tmp_restart
 
 # Run the Solid Queue supervisor inside of Puma for single-server deployments
 plugin :solid_queue if ENV["SOLID_QUEUE_IN_PUMA"]
+
+environment ENV.fetch("RAILS_ENV", "production")
+

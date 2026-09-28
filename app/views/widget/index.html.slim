@@ -1,2 +1,5 @@
 = turbo_frame_tag "widget" do
-  = render "home"
+  - if @resume_conversation
+    = render "messages"
+  - else
+    = render "home"
