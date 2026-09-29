@@ -180,6 +180,36 @@ RSpec.describe 'Widget::Messages', type: :request do
       end
     end
 
+    it 'bypasses pre-chat form when customer is restored via X-Customer-Session-Token header' do
+      account.with_shard do
+        pre_chat = create(:channel_contact_form, account: account)
+        widget.update!(pre_chat_form: pre_chat)
+
+        customer = create(:customer, account: account, name: 'Header Restored User')
+        create(:customer_inbox, customer: customer, inbox: inbox)
+
+        token = JwtService.encode({
+          purpose: 'widget_customer_resume',
+          account_id: account.id,
+          widget_id: widget.id,
+          inbox_id: inbox.id,
+          customer_id: customer.id
+        })
+
+        get widget_messages_path(account_id: account.id, widget_id: widget.id),
+            headers: {
+              'Accept' => 'text/vnd.turbo-stream.html',
+              'X-Customer-Session-Token' => token
+            }
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).not_to include('pre-chat-fields')
+        expect(response.body).to include('main-content')
+        # Back button is a link tag preventing form action stripping
+        expect(response.body).to match(/<a[^>]+class="widget-chat-back"[^>]+href="[^"]*home\.turbo_stream/)
+      end
+    end
+
     it 'reuses resolved conversation within reopen window' do
       account.with_shard do
         customer = create(:customer, account: account)

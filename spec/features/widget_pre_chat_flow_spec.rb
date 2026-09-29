@@ -123,5 +123,63 @@ RSpec.describe 'Widget Pre-Chat Form Flow', type: :feature do
         expect(conv.messages.first.content).to eq('The machines are coming, send help!')
       end
     end
+
+    it 'preserves customer session and conversations across full navigation cycle (messages -> home -> conversations)' do
+      account.with_shard do
+        msg_field = account.custom_fields.find_by(key: 'message')
+        pre_chat = create(:channel_contact_form, account: account)
+        create(:custom_field_resource, resource: pre_chat, custom_field: msg_field, position: 1)
+        widget.update!(pre_chat_form: pre_chat)
+
+        # 1. Visitor submits pre-chat form with message
+        page.driver.post widget_create_customer_path(account_id: account.id, widget_id: widget.id), {
+          name: 'Ellen Ripley',
+          email: 'ripley@weyland.com',
+          custom_fields: {
+            'message' => 'Nostromo distress signal'
+          }
+        }
+
+        expect(page.status_code).to eq(200)
+        token_match = page.body.match(/data-widget-customer-session-token-value="([^"]+)"/)
+        expect(token_match).to be_present
+        session_token = token_match[1]
+
+        # Verify chat back link is an <a> tag preserving token
+        expect(page.body).to include('<a class="widget-chat-back"')
+        expect(page.body).to include("customer_session_token=#{session_token}")
+
+        # 2. Visitor clicks back to Home (simulated via Turbo GET with session token)
+        visit widget_home_path(account_id: account.id, widget_id: widget.id, customer_session_token: session_token)
+        expect(page.status_code).to eq(200)
+
+        created_customer = account.customers.find_by(email: 'ripley@weyland.com')
+        expect(created_customer).to be_present
+
+        # Footer links must be <a> tags with token embedded
+        expect(page.body).to include('<a class="widget-footer-nav-btn')
+        token_nav_match = page.body.match(/customer_session_token=([A-Za-z0-9_\-.]+)/)
+        expect(token_nav_match).to be_present
+        expect(JwtService.decode(token_nav_match[1])['customer_id']).to eq(created_customer.id)
+
+        # 3. Visitor navigates to Conversations tab via header token or query param
+        page.driver.header 'X-Customer-Session-Token', session_token
+        visit widget_conversations_path(account_id: account.id, widget_id: widget.id)
+        expect(page.status_code).to eq(200)
+
+        # Must display the visitor's conversation, not the empty state
+        expect(page.body).to include('Nostromo distress signal')
+        expect(page.body).not_to include('No conversations yet.')
+
+        # Conversation item link must be an <a> tag preserving session
+        expect(page.body).to include('<a class="widget-conv-item"')
+
+        # 4. Visitor clicks "Start conversation" / messages with token
+        visit widget_messages_path(account_id: account.id, widget_id: widget.id)
+        expect(page.status_code).to eq(200)
+        expect(page.body).not_to include('pre-chat-form')
+        expect(page.body).to include('Nostromo distress signal')
+      end
+    end
   end
 end

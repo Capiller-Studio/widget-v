@@ -20,7 +20,7 @@
       #help-results
       .widget-start-conv-row
         - if @is_offline
-          = button_to widget_messages_path(widget_route_params(format: :turbo_stream)), method: :get, class: "widget-start-conv-link", form: { data: { turbo_stream: true } } do
+          = link_to widget_messages_path(widget_route_params(format: :turbo_stream)), class: "widget-start-conv-link", data: { turbo_stream: true } do
             .widget-icon-chip.widget-icon-chip--brand
               = widget_conversation_icon_tag(@widget, class: "widget-launcher-img", alt: t('widget.home.offline_heading', default: "We're currently offline"))
             .widget-start-conv-copy
@@ -28,7 +28,7 @@
               small = t('widget.home.offline_subheading', default: "Leave a message and we'll get back to you soon.")
             .widget-chevron ›
         - else
-          = button_to widget_messages_path(widget_route_params(format: :turbo_stream)), method: :get, class: "widget-start-conv-link", form: { data: { turbo_stream: true } } do
+          = link_to widget_messages_path(widget_route_params(format: :turbo_stream)), class: "widget-start-conv-link", data: { turbo_stream: true } do
             .widget-icon-chip.widget-icon-chip--brand
               = widget_conversation_icon_tag(@widget, class: "widget-launcher-img", alt: t('widget.home.start_conversation'))
             .widget-start-conv-text

@@ -3,7 +3,7 @@
     .widget-hero.widget-hero--article
       .widget-hero-top
         .widget-article-detail-back
-          = button_to widget_help_category_path(widget_route_params(category_id: @category.id, format: :turbo_stream)), method: :get, class: "widget-article-detail-back-btn", form: { data: { turbo_stream: true } } do
+          = link_to widget_help_category_path(widget_route_params(category_id: @category.id, format: :turbo_stream)), class: "widget-article-detail-back-btn", data: { turbo_stream: true } do
             = inline_svg_tag("back_arrow.svg", class: "widget-article-detail-back-icon")
         button.widget-close-btn type="button" aria-label="Close"
           | ×

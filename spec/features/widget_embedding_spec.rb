@@ -31,6 +31,10 @@ RSpec.describe 'Widget Embedding & Frame Feature', type: :feature do
 
         expect(page.body).to include('deskbolic:request_token')
         expect(page.body).to include('deskbolic:token_response')
+        expect(page.body).to include('deskbolic:token-updated')
+        expect(page.body).to include('turbo:before-fetch-request')
+        expect(page.body).to include('X-Customer-Session-Token')
+        expect(page.body).to include('window.localStorage.removeItem(storageKey)')
         expect(page.body).to include('deskbolic:set-customer')
         expect(page.body).to include('deskbolic:reset')
         expect(page.body).to include(widget_identify_path(account_id: account.id, widget_id: widget.id, customer_session_token: nil))

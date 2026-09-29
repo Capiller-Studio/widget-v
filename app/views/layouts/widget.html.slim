@@ -79,16 +79,30 @@ html lang=I18n.locale dir=(I18n.locale.to_s.match?(/^(ar|he|fa|ur)/i) ? "rtl" : 
           var widgetId = "#{@widget.id}";
           var storageKey = "deskbolic:customer-session-token:" + accountId + ":" + widgetId;
 
+          function getActiveCustomerToken() {
+            if (customerToken) return customerToken;
+            try {
+              var t = window.localStorage.getItem(storageKey);
+              if (t) return t;
+            } catch (e) {}
+            return null;
+          }
+
           if (customerToken) {
             try { window.localStorage.setItem(storageKey, customerToken); } catch (e) {}
             if (window.parent !== window) {
               window.parent.postMessage({ type: "deskbolic:customer", customer_session_token: customerToken }, "*");
             }
           } else {
-            var localToken = null;
-            try { localToken = window.localStorage.getItem(storageKey); } catch (e) {}
+            var currentUrl = new URL(window.location.href);
+            if (currentUrl.searchParams.has("customer_session_token")) {
+              // Server rejected the token in URL — purge stale token from storage
+              try { window.localStorage.removeItem(storageKey); } catch (e) {}
+            }
+
+            var localToken = getActiveCustomerToken();
             if (localToken) {
-              var currentUrl = new URL(window.location.href);
+              customerToken = localToken;
               if (!currentUrl.searchParams.has("customer_session_token")) {
                 currentUrl.searchParams.set("customer_session_token", localToken);
                 window.location.replace(currentUrl.toString());
@@ -100,6 +114,23 @@ html lang=I18n.locale dir=(I18n.locale.to_s.match?(/^(ar|he|fa|ur)/i) ? "rtl" : 
             }
           }
 
+          // Automatically inject customer token header on all Turbo fetch requests
+          document.addEventListener("turbo:before-fetch-request", function(event) {
+            var activeToken = getActiveCustomerToken();
+            if (activeToken && event.detail && event.detail.fetchOptions) {
+              event.detail.fetchOptions.headers = event.detail.fetchOptions.headers || {};
+              event.detail.fetchOptions.headers["X-Customer-Session-Token"] = activeToken;
+            }
+          });
+
+          // Listen for token updates within the iframe (e.g. from Stimulus upon customer creation)
+          window.addEventListener("deskbolic:token-updated", function(event) {
+            if (event.detail && event.detail.token) {
+              customerToken = event.detail.token;
+              try { window.localStorage.setItem(storageKey, event.detail.token); } catch (e) {}
+            }
+          });
+
           // Global Turbo fetch error recovery (e.g. HTTP/3 QUIC idle timeout)
           document.addEventListener("turbo:fetch-request-error", function(event) {
             var req = event.detail ? event.detail.request : null;
@@ -109,12 +140,17 @@ html lang=I18n.locale dir=(I18n.locale.to_s.match?(/^(ar|he|fa|ur)/i) ? "rtl" : 
 
             if (req.method === "GET") {
               setTimeout(function() {
+                var retryHeaders = {
+                  "Accept": "text/vnd.turbo-stream.html, text/html, application/xhtml+xml",
+                  "X-CSRF-Token": document.querySelector("meta[name='csrf-token']") ? document.querySelector("meta[name='csrf-token']").content : ""
+                };
+                var activeToken = getActiveCustomerToken();
+                if (activeToken) {
+                  retryHeaders["X-Customer-Session-Token"] = activeToken;
+                }
                 fetch(req.url, {
                   method: "GET",
-                  headers: {
-                    "Accept": "text/vnd.turbo-stream.html, text/html, application/xhtml+xml",
-                    "X-CSRF-Token": document.querySelector("meta[name='csrf-token']") ? document.querySelector("meta[name='csrf-token']").content : ""
-                  }
+                  headers: retryHeaders
                 }).then(function(res) {
                   return res.text();
                 }).then(function(html) {
@@ -137,12 +173,16 @@ html lang=I18n.locale dir=(I18n.locale.to_s.match?(/^(ar|he|fa|ur)/i) ? "rtl" : 
             if (!data || !data.type) return;
 
             if (data.type === "deskbolic:token_response" && data.customer_session_token && !customerToken) {
+              customerToken = data.customer_session_token;
               try { window.localStorage.setItem(storageKey, data.customer_session_token); } catch (e) {}
               var currentUrl = new URL(window.location.href);
               if (!currentUrl.searchParams.has("customer_session_token")) {
                 currentUrl.searchParams.set("customer_session_token", data.customer_session_token);
                 window.location.replace(currentUrl.toString());
               }
+            } else if (data.type === "deskbolic:customer" && data.customer_session_token) {
+              customerToken = data.customer_session_token;
+              try { window.localStorage.setItem(storageKey, data.customer_session_token); } catch (e) {}
             } else if (data.type === "deskbolic:set-customer" && data.customer) {
               var identifyUrl = "#{widget_identify_path(widget_route_params(customer_session_token: nil))}";
               var formData = new FormData();
