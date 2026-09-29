@@ -11,10 +11,7 @@
       span.widget-page-search-icon
         = inline_svg_tag("search.svg")
       input type="text" name="q" placeholder=t('widget.conversations.search_placeholder', default: "Search conversations...")
-    .main.main-content(
-      data-controller="widget"
-      data-widget-customer-session-token-value=customer_session_token
-    )
+    .main.main-content data-controller="widget"
       .conversation-history#conversations-list
         - if @conversations.any?
           = render partial: "widget/conversation_item", collection: @conversations, as: :conversation
