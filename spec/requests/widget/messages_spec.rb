@@ -232,5 +232,36 @@ RSpec.describe 'Widget::Messages', type: :request do
         expect(response.body).to include('Earlier chat')
       end
     end
+
+    it 'marks unread agent messages as read and tracks customer activity when messages are loaded' do
+      account.with_shard do
+        customer = create(:customer, account: account)
+        user = create(:user)
+        conversation = create(:conversation, account: account, inbox: inbox)
+        conversation.conversation_members.create!(member: customer, account: account)
+        agent_message = create(:message, account: account, inbox: inbox, conversation: conversation, sender: user, status: :sent, content: 'Agent reply')
+
+        allow(Utilities::ActivityHelpers).to receive(:update_activity)
+
+        token = JwtService.encode({
+          purpose: 'widget_customer_resume',
+          account_id: account.id,
+          widget_id: widget.id,
+          inbox_id: inbox.id,
+          customer_id: customer.id
+        })
+
+        get widget_messages_path(account_id: account.id, widget_id: widget.id, customer_session_token: token),
+            headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+        expect(response).to have_http_status(:ok)
+        expect(agent_message.reload.status).to eq('read')
+        expect(Utilities::ActivityHelpers).to have_received(:update_activity).with(
+          account.id,
+          'Customer',
+          customer.id
+        ).at_least(:once)
+      end
+    end
   end
 end

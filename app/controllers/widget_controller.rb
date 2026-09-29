@@ -5,6 +5,7 @@ class WidgetController < ApplicationController
 
   protect_from_forgery with: :null_session
   after_action :skip_session_cookie
+  after_action :track_customer_activity, if: -> { @account.present? && @customer.present? }
   helper_method :customer_session_token
 
   around_action :set_sharding_context
@@ -23,6 +24,7 @@ class WidgetController < ApplicationController
         messages_query = @conversation.messages.global.includes(:sender, attachments: { file_attachment: :blob }).order(created_at: :desc)
         @pagy, @messages = pagy(messages_query, items: 20)
         @messages = @messages.reverse
+        mark_messages_as_read(@conversation)
         return
       end
     end
@@ -79,6 +81,7 @@ class WidgetController < ApplicationController
 
     # We ordered by desc for pagy, so reverse to show in chronological order in UI
     @messages = @messages.reverse
+    mark_messages_as_read(@conversation) if @conversation.present?
 
     respond_to do |format|
       format.turbo_stream do
@@ -172,6 +175,7 @@ class WidgetController < ApplicationController
       attachments: attachments_list,
       conversation_data: conversation_data
     )
+    mark_messages_as_read(@conversation) if @conversation.present?
 
     respond_to do |format|
       format.turbo_stream do
@@ -349,6 +353,7 @@ class WidgetController < ApplicationController
     messages_query = @conversation&.messages&.includes(:sender, attachments: { file_attachment: :blob })&.order(created_at: :desc) || Message.none
     @pagy, @messages = pagy(messages_query, items: 20)
     @messages = @messages.reverse
+    mark_messages_as_read(@conversation) if @conversation.present?
 
     respond_to do |format|
       format.turbo_stream do
@@ -410,6 +415,7 @@ class WidgetController < ApplicationController
     messages_query = @conversation&.messages&.global&.includes(:sender, attachments: { file_attachment: :blob })&.order(created_at: :desc) || Message.none
     @pagy, @messages = pagy(messages_query, items: 20)
     @messages = @messages.reverse
+    mark_messages_as_read(@conversation) if @conversation.present?
 
     respond_to do |format|
       format.turbo_stream do
@@ -794,5 +800,23 @@ class WidgetController < ApplicationController
     options[:customer_session_token] = customer_session_token if @customer
 
     options
+  end
+
+  def mark_messages_as_read(conversation)
+    return unless conversation.present? && @customer.present?
+
+    unread_messages = conversation.messages.where.not(sender_type: "Customer").where.not(status: :read)
+    unread_messages.find_each(&:read!) if unread_messages.exists?
+
+    UnreadCounts::Reset.call(conversation, @customer)
+    @unread_count = 0
+  rescue StandardError => e
+    Rails.logger.warn("[WidgetController] Failed to mark messages as read: #{e.message}")
+  end
+
+  def track_customer_activity
+    ::Utilities::ActivityHelpers.update_activity(@account.id, "Customer", @customer.id)
+  rescue StandardError => e
+    Rails.logger.warn("[WidgetController] Failed to track customer activity: #{e.message}")
   end
 end

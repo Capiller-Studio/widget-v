@@ -13,6 +13,7 @@ export default class extends Controller {
   static targets = ["editorContainer"]
   static values = {
     connectionToken: String,
+    conversationId: String,
     accountId: String,
     widgetId: String,
     customerSessionToken: String,
@@ -44,10 +45,17 @@ export default class extends Controller {
     // Setup click-to-expand on chat images
     this.setupImagePreview()
 
-    if (!this.connectionTokenValue) {
-      console.warn("[Deskbolic] No connection token — ActionCable will NOT connect")
-      return
+    if (!this.connectionTokenValue) return
+
+    this._visibilityHandler = () => {
+      if (typeof document !== "undefined" && !document.hidden) {
+        this.markCurrentConversationAsRead()
+        this.sendActivityPing()
+        this.unreadCount = 0
+        this.notifyParent("deskbolic:unread", { count: 0 })
+      }
     }
+    document.addEventListener("visibilitychange", this._visibilityHandler)
 
     this.unreadCount = this.unreadCountValue
     this.notifyParent("deskbolic:unread", { count: this.unreadCount })
@@ -63,6 +71,11 @@ export default class extends Controller {
   }
 
   disconnect() {
+    if (this._visibilityHandler) {
+      document.removeEventListener("visibilitychange", this._visibilityHandler)
+      this._visibilityHandler = null
+    }
+    this.stopActivityHeartbeat()
     if (this.deskbolicEditor) this.deskbolicEditor.destroy()
     if (this._imagePreviewHandler) {
       const list = document.getElementById("messages-list")
@@ -192,6 +205,7 @@ export default class extends Controller {
   }
 
   releaseCable() {
+    this.stopActivityHeartbeat()
     const connection = this.cableConnection
     if (!connection) return
 
@@ -211,10 +225,14 @@ export default class extends Controller {
 
   onConnected() {
     this._reconnectAttempts = 0
+    this.startActivityHeartbeat()
+    this.sendActivityPing()
+    this.markCurrentConversationAsRead()
   }
 
   onDisconnected() {
     this._reconnectAttempts++
+    this.stopActivityHeartbeat()
   }
 
   onRejected() {
@@ -244,10 +262,56 @@ export default class extends Controller {
           return
         }
 
-        this.unreadCount++
-        this.notifyParent("deskbolic:unread", { count: this.unreadCount })
+        const isHidden = typeof document !== "undefined" && (document.hidden || (typeof document.hasFocus === "function" && !document.hasFocus()))
+        if (isHidden) {
+          this.unreadCount++
+          this.notifyParent("deskbolic:unread", { count: this.unreadCount })
+        } else {
+          this.markCurrentConversationAsRead(messageId)
+          this.sendActivityPing()
+          this.unreadCount = 0
+          this.notifyParent("deskbolic:unread", { count: 0 })
+        }
         this.notifyParent("deskbolic:sound:play")
       }
+    }
+  }
+
+  markCurrentConversationAsRead(messageId = null) {
+    const channel = this.cableConnection?.channel
+    if (!channel) return
+
+    const payload = {}
+    if (messageId) payload.message_id = messageId
+    if (this.hasConversationIdValue && this.conversationIdValue) {
+      payload.conversation_id = this.conversationIdValue
+    }
+
+    try {
+      channel.perform("read", payload)
+    } catch (e) {}
+  }
+
+  sendActivityPing() {
+    const channel = this.cableConnection?.channel
+    if (!channel) return
+
+    try {
+      channel.perform("activity")
+    } catch (e) {}
+  }
+
+  startActivityHeartbeat() {
+    this.stopActivityHeartbeat()
+    this._activityInterval = setInterval(() => {
+      this.sendActivityPing()
+    }, 20000)
+  }
+
+  stopActivityHeartbeat() {
+    if (this._activityInterval) {
+      clearInterval(this._activityInterval)
+      this._activityInterval = null
     }
   }
 
