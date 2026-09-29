@@ -141,6 +141,35 @@ RSpec.describe 'Widget::Messages', type: :request do
       end
     end
 
+    it 'marks prior unread agent messages as read when customer sends a reply' do
+      account.with_shard do
+        customer = create(:customer, account: account)
+        user = create(:user)
+        create(:customer_inbox, customer: customer, inbox: inbox)
+        conv = create(:conversation, account: account, inbox: inbox, status: :active)
+        conv.conversation_members.create!(member: customer, account: account)
+        agent_msg = create(:message, conversation: conv, account: account, inbox: inbox, sender: user, status: :sent, content: 'Agent question')
+
+        token = JwtService.encode({
+          purpose: 'widget_customer_resume',
+          account_id: account.id,
+          widget_id: widget.id,
+          inbox_id: inbox.id,
+          customer_id: customer.id
+        })
+
+        post widget_create_message_path(account_id: account.id, widget_id: widget.id, conversation_id: conv.id),
+             params: { content: 'Customer response' },
+             headers: {
+               'Accept' => 'text/vnd.turbo-stream.html',
+               'X-Customer-Session-Token' => token
+             }
+
+        expect(response).to have_http_status(:ok)
+        expect(agent_msg.reload.status).to eq('read')
+      end
+    end
+
     it 'returns 401 unauthorized when unauthenticated customer tries to post message' do
       account.with_shard do
         widget.update!(flags: 0)

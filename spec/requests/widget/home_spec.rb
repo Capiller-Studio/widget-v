@@ -121,5 +121,37 @@ RSpec.describe 'Widget::Home', type: :request do
         expect(response.body).to include('Active thread message')
       end
     end
+
+    it 'marks unread agent messages as read and updates activity when auto-resuming conversation' do
+      account.with_shard do
+        customer = create(:customer, account: account)
+        user = create(:user)
+        create(:customer_inbox, customer: customer, inbox: inbox)
+        conv = create(:conversation, account: account, inbox: inbox, status: :active)
+        conv.conversation_members.create!(member: customer, account: account)
+        agent_msg = create(:message, conversation: conv, account: account, inbox: inbox, sender: user, status: :sent, content: 'Agent unread response')
+
+        allow(Utilities::ActivityHelpers).to receive(:update_activity)
+
+        token = JwtService.encode({
+          purpose: 'widget_customer_resume',
+          account_id: account.id,
+          widget_id: widget.id,
+          inbox_id: inbox.id,
+          customer_id: customer.id
+        })
+
+        get widget_root_path(account_id: account.id, widget_id: widget.id),
+            headers: { 'X-Customer-Session-Token' => token }
+
+        expect(response).to have_http_status(:ok)
+        expect(agent_msg.reload.status).to eq('read')
+        expect(Utilities::ActivityHelpers).to have_received(:update_activity).with(
+          account.id,
+          'Customer',
+          customer.id
+        ).at_least(:once)
+      end
+    end
   end
 end

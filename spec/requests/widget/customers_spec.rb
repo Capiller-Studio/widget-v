@@ -250,6 +250,24 @@ RSpec.describe 'Widget::Customers', type: :request do
           expect(cust.email).to eq('filled@example.com')
         end
       end
+
+      it 'marks unread agent messages as read when customer is identified' do
+        account.with_shard do
+          cust = create(:customer, account: account, external_id: 'ext_blank_profile')
+          create(:customer_inbox, customer: cust, inbox: inbox)
+          user = create(:user)
+          conv = create(:conversation, account: account, inbox: inbox, status: :active)
+          conv.conversation_members.create!(member: cust, account: account)
+          agent_msg = create(:message, conversation: conv, account: account, inbox: inbox, sender: user, status: :sent, content: 'Agent follow up')
+
+          post widget_identify_path(account_id: account.id, widget_id: widget.id),
+               params: { identifier: 'ext_blank_profile' },
+               as: :json
+
+          expect(response).to have_http_status(:ok)
+          expect(agent_msg.reload.status).to eq('read')
+        end
+      end
     end
 
     context 'when secure identity is enforced' do
