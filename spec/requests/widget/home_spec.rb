@@ -68,5 +68,58 @@ RSpec.describe 'Widget::Home', type: :request do
         expect(response.body).to include('turbo-stream action="update" target="widget"')
       end
     end
+
+    it 'embeds customer session token in footer navigation links when authenticated via header' do
+      account.with_shard do
+        customer = create(:customer, account: account)
+        create(:customer_inbox, customer: customer, inbox: inbox)
+
+        token = JwtService.encode({
+          purpose: 'widget_customer_resume',
+          account_id: account.id,
+          widget_id: widget.id,
+          inbox_id: inbox.id,
+          customer_id: customer.id
+        })
+
+        get widget_home_path(account_id: account.id, widget_id: widget.id),
+            headers: {
+              'Accept' => 'text/vnd.turbo-stream.html',
+              'X-Customer-Session-Token' => token
+            }
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include('<a class="widget-footer-nav-btn')
+        token_match = response.body.match(/customer_session_token=([A-Za-z0-9_\-.]+)/)
+        expect(token_match).to be_present
+        expect(JwtService.decode(token_match[1])['customer_id']).to eq(customer.id)
+      end
+    end
+  end
+
+  describe 'GET /w/:account_id/:widget_id (index with session header)' do
+    it 'auto-resumes active conversation directly when header token is provided' do
+      account.with_shard do
+        customer = create(:customer, account: account)
+        create(:customer_inbox, customer: customer, inbox: inbox)
+        conv = create(:conversation, account: account, inbox: inbox, status: :active)
+        conv.conversation_members.create!(member: customer, account: account)
+        create(:message, conversation: conv, account: account, inbox: inbox, sender: customer, content: 'Active thread message')
+
+        token = JwtService.encode({
+          purpose: 'widget_customer_resume',
+          account_id: account.id,
+          widget_id: widget.id,
+          inbox_id: inbox.id,
+          customer_id: customer.id
+        })
+
+        get widget_root_path(account_id: account.id, widget_id: widget.id),
+            headers: { 'X-Customer-Session-Token' => token }
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include('Active thread message')
+      end
+    end
   end
 end

@@ -663,6 +663,12 @@ export default class extends Controller {
       window.localStorage.setItem(storageKey, this.customerSessionTokenValue)
     } catch (error) {}
 
+    try {
+      window.dispatchEvent(new CustomEvent("deskbolic:token-updated", {
+        detail: { token: this.customerSessionTokenValue }
+      }))
+    } catch (error) {}
+
     this.notifyParent("deskbolic:customer", {
       customer_session_token: this.customerSessionTokenValue
     })
