@@ -5,14 +5,16 @@
       .msg-attachments
         - message.attachments.each do |attachment|
           - if attachment.audio? && attachment.file.attached?
-            .msg-attachment-audio data-controller="audio-player" data-audio-player-play-icon-value=asset_path("play.svg") data-audio-player-pause-icon-value=asset_path("pause.svg") data-audio-player-volume-icon-value=asset_path("volume.svg") data-audio-player-mute-icon-value=asset_path("mute.svg")
+            .msg-attachment-audio data-controller="audio-player"
               audio data-audio-player-target="audio" preload="metadata" src=rails_blob_path(attachment.file)
               .audio-player-controls
                 button.audio-btn type="button" data-action="audio-player#toggle" data-audio-player-target="playButton"
-                  = image_tag "play.svg", data: { audio_player_target: "playIcon" }, alt: "Play"
+                  span.audio-icon-wrap data-audio-player-target="playIcon"
+                    = inline_svg_tag "play.svg", alt: "Play"
                 .audio-waveform data-audio-player-target="waveform"
                 button.audio-btn.audio-mute-btn type="button" data-action="audio-player#toggleMute" data-audio-player-target="muteButton"
-                  = image_tag "volume.svg", data: { audio_player_target: "muteIcon" }, alt: "Mute"
+                  span.audio-icon-wrap data-audio-player-target="muteIcon"
+                    = inline_svg_tag "volume.svg", alt: "Mute"
               .audio-time data-audio-player-target="timeDisplay" 0:00
           - elsif attachment.image? && attachment.file.attached?
             .msg-attachment-img
@@ -31,14 +33,16 @@
         .msg-attachments
           - message.attachments.each do |attachment|
             - if attachment.audio? && attachment.file.attached?
-              .msg-attachment-audio data-controller="audio-player" data-audio-player-play-icon-value=asset_path("play.svg") data-audio-player-pause-icon-value=asset_path("pause.svg") data-audio-player-volume-icon-value=asset_path("volume.svg") data-audio-player-mute-icon-value=asset_path("mute.svg")
+              .msg-attachment-audio data-controller="audio-player"
                 audio data-audio-player-target="audio" preload="metadata" src=rails_blob_path(attachment.file)
                 .audio-player-controls
                   button.audio-btn type="button" data-action="audio-player#toggle" data-audio-player-target="playButton"
-                    = image_tag "play.svg", data: { audio_player_target: "playIcon" }, alt: "Play"
+                    span.audio-icon-wrap data-audio-player-target="playIcon"
+                      = inline_svg_tag "play.svg", alt: "Play"
                   .audio-waveform data-audio-player-target="waveform"
                   button.audio-btn.audio-mute-btn type="button" data-action="audio-player#toggleMute" data-audio-player-target="muteButton"
-                    = image_tag "volume.svg", data: { audio_player_target: "muteIcon" }, alt: "Mute"
+                    span.audio-icon-wrap data-audio-player-target="muteIcon"
+                      = inline_svg_tag "volume.svg", alt: "Mute"
                 .audio-time data-audio-player-target="timeDisplay" 0:00
             - elsif attachment.image? && attachment.file.attached?
               .msg-attachment-img

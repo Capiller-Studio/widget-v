@@ -1,6 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 import { createConsumer } from "@rails/actioncable"
 import { DeskbolicEditor } from "../lib/deskbolic_editor"
+import { PLAY_ICON, VOLUME_ICON } from "../lib/icons"
 
 const cableConnections = new Map()
 const CABLE_DISCONNECT_DELAY = 30000
@@ -252,8 +253,7 @@ export default class extends Controller {
 
       if (message && message.visibility === 'personal') return
 
-      // Customer messages are rendered from the POST response. Cable events render agent messages.
-      if (message && !this.isIncomingMessage(message)) {
+      if (message) {
         const messageId = message.id || message.message_id || message.uuid
         if (messageId && this.messageRenderedCorrectly(messageId)) return
 
@@ -262,17 +262,19 @@ export default class extends Controller {
           return
         }
 
-        const isHidden = typeof document !== "undefined" && (document.hidden || (typeof document.hasFocus === "function" && !document.hasFocus()))
-        if (isHidden) {
-          this.unreadCount++
-          this.notifyParent("deskbolic:unread", { count: this.unreadCount })
-        } else {
-          this.markCurrentConversationAsRead(messageId)
-          this.sendActivityPing()
-          this.unreadCount = 0
-          this.notifyParent("deskbolic:unread", { count: 0 })
+        if (!this.isIncomingMessage(message)) {
+          const isHidden = typeof document !== "undefined" && (document.hidden || (typeof document.hasFocus === "function" && !document.hasFocus()))
+          if (isHidden) {
+            this.unreadCount++
+            this.notifyParent("deskbolic:unread", { count: this.unreadCount })
+          } else {
+            this.markCurrentConversationAsRead(messageId)
+            this.sendActivityPing()
+            this.unreadCount = 0
+            this.notifyParent("deskbolic:unread", { count: 0 })
+          }
+          this.notifyParent("deskbolic:sound:play")
         }
-        this.notifyParent("deskbolic:sound:play")
       }
     }
   }
@@ -443,14 +445,13 @@ export default class extends Controller {
     const url = attachment.url || attachment.file_url || attachment.download_url || attachment.direct_download_url
     if (!url) return null
 
-    const type = attachment.attachment_type || attachment.type || ""
-    const contentType = attachment.content_type || ""
+    const type = (attachment.attachment_type || attachment.type || "").toLowerCase()
 
-    if (type === "audio" || contentType.startsWith("audio/")) {
+    if (type === "audio") {
       return this.buildAudioAttachment(url)
     }
 
-    if (type === "image" || contentType.startsWith("image/")) {
+    if (type === "image") {
       return this.buildImageAttachment(url, attachment.filename)
     }
 
@@ -461,10 +462,6 @@ export default class extends Controller {
     const wrapper = document.createElement("div")
     wrapper.classList.add("msg-attachment-audio")
     wrapper.dataset.controller = "audio-player"
-    wrapper.dataset.audioPlayerPlayIconValue = "/assets/play.svg"
-    wrapper.dataset.audioPlayerPauseIconValue = "/assets/pause.svg"
-    wrapper.dataset.audioPlayerVolumeIconValue = "/assets/volume.svg"
-    wrapper.dataset.audioPlayerMuteIconValue = "/assets/mute.svg"
 
     const audio = document.createElement("audio")
     audio.dataset.audioPlayerTarget = "audio"
@@ -480,10 +477,10 @@ export default class extends Controller {
     playButton.dataset.action = "audio-player#toggle"
     playButton.dataset.audioPlayerTarget = "playButton"
 
-    const playIcon = document.createElement("img")
-    playIcon.src = "/assets/play.svg"
+    const playIcon = document.createElement("span")
+    playIcon.classList.add("audio-icon-wrap")
     playIcon.dataset.audioPlayerTarget = "playIcon"
-    playIcon.alt = "Play"
+    playIcon.innerHTML = PLAY_ICON
     playButton.appendChild(playIcon)
 
     const waveform = document.createElement("div")
@@ -496,10 +493,10 @@ export default class extends Controller {
     muteButton.dataset.action = "audio-player#toggleMute"
     muteButton.dataset.audioPlayerTarget = "muteButton"
 
-    const muteIcon = document.createElement("img")
-    muteIcon.src = "/assets/volume.svg"
+    const muteIcon = document.createElement("span")
+    muteIcon.classList.add("audio-icon-wrap")
     muteIcon.dataset.audioPlayerTarget = "muteIcon"
-    muteIcon.alt = "Mute"
+    muteIcon.innerHTML = VOLUME_ICON
     muteButton.appendChild(muteIcon)
 
     controls.appendChild(playButton)

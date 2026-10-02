@@ -41,6 +41,7 @@ RSpec.describe 'Widget::Attachments', type: :request do
 
         expect(response).to have_http_status(:ok)
         expect(response.body).to include('Check this screenshot')
+        expect(response.body).to include('attachment-image')
       end
     end
   end

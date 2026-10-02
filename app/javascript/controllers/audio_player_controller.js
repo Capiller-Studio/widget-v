@@ -1,15 +1,9 @@
 // audio_player_controller.js
 import { Controller } from "@hotwired/stimulus"
+import { PLAY_ICON, PAUSE_ICON, VOLUME_ICON, MUTE_ICON } from "../lib/icons"
 
 export default class extends Controller {
   static targets = ["audio", "playButton", "playIcon", "timeDisplay", "waveform", "muteButton", "muteIcon"]
-
-  static values = {
-    playIcon: { type: String, default: "/assets/play.svg" },
-    pauseIcon: { type: String, default: "/assets/pause.svg" },
-    volumeIcon: { type: String, default: "/assets/volume.svg" },
-    muteIcon: { type: String, default: "/assets/mute.svg" }
-  }
 
   connect() {
     this.audioTarget.addEventListener("timeupdate", () => this.updateTime())
@@ -45,18 +39,18 @@ export default class extends Controller {
   toggle() {
     if (this.audioTarget.paused) {
       this.audioTarget.play()
-      this.playIconTarget.src = this.pauseIconValue
+      this.setIcon(this.playIconTarget, PAUSE_ICON)
       this.element.classList.add("is-playing")
     } else {
       this.audioTarget.pause()
-      this.playIconTarget.src = this.playIconValue
+      this.setIcon(this.playIconTarget, PLAY_ICON)
       this.element.classList.remove("is-playing")
     }
   }
 
   toggleMute() {
     this.audioTarget.muted = !this.audioTarget.muted
-    this.muteIconTarget.src = this.audioTarget.muted ? this.muteIconValue : this.volumeIconValue
+    this.setIcon(this.muteIconTarget, this.audioTarget.muted ? MUTE_ICON : VOLUME_ICON)
     this.element.classList.toggle("is-muted", this.audioTarget.muted)
   }
 
@@ -77,10 +71,25 @@ export default class extends Controller {
   }
 
   reset() {
-    this.playIconTarget.src = this.playIconValue
+    this.setIcon(this.playIconTarget, PLAY_ICON)
     this.element.classList.remove("is-playing")
     this.updateWaveformProgress(0)
     this.timeDisplayTarget.textContent = this.formatTime(this.audioTarget.duration || 0)
+  }
+
+  setIcon(target, svgHtml) {
+    if (!target) return
+    if (target.tagName.toLowerCase() === "img") {
+      const span = document.createElement("span")
+      span.className = "audio-icon-wrap"
+      if (target.dataset.audioPlayerTarget) {
+        span.dataset.audioPlayerTarget = target.dataset.audioPlayerTarget
+      }
+      span.innerHTML = svgHtml
+      target.replaceWith(span)
+    } else {
+      target.innerHTML = svgHtml
+    }
   }
 
   formatTime(seconds) {

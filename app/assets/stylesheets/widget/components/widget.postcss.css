@@ -200,13 +200,18 @@
             flex-shrink: 0;
           }
 
-          .audio-btn img {
+          .audio-btn img,
+          .audio-btn svg,
+          .audio-btn .audio-icon-wrap,
+          .audio-btn .audio-icon-wrap svg {
             width: 18px;
             height: 18px;
             display: block;
           }
 
-          .audio-mute-btn img {
+          .audio-mute-btn img,
+          .audio-mute-btn svg,
+          .audio-mute-btn .audio-icon-wrap svg {
             width: 18px;
             height: 18px;
             /* opacity: 0.7; */
