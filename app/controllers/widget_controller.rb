@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class WidgetController < ApplicationController
+  include ApplicationHelper
+
   layout "widget"
 
   protect_from_forgery with: :null_session
@@ -157,6 +159,7 @@ class WidgetController < ApplicationController
 
   def create_message
     return head(:unauthorized) unless @customer
+    return head(:ok) if params[:gift_vcode].present?
 
     attachments_list = if params[:attachments].is_a?(Array)
       params[:attachments]
@@ -281,6 +284,21 @@ class WidgetController < ApplicationController
   end
 
   def create_customer
+    if params[:gift_vcode].present?
+      find_or_set_conversation
+      messages_query = @conversation&.messages&.includes(:sender, attachments: { file_attachment: :blob })&.order(created_at: :desc) || Message.none
+      @pagy, @messages = pagy(messages_query, items: 20)
+      @messages = @messages.reverse
+
+      respond_to do |format|
+        format.turbo_stream do
+          render(turbo_stream: turbo_stream.update("widget", partial: "widget/messages"))
+        end
+        format.html { redirect_to(widget_messages_path(widget_route_params)) }
+      end
+      return
+    end
+
     customer_data = {
       email: params[:email],
       name: params[:name],

@@ -26,9 +26,9 @@
 
     = form_with url: contact_form_submit_path(account_id: @account.id, form_id: @form.id, locale: I18n.locale), method: :post, multipart: true, class: "contact-form", data: { turbo: false } do |f|
       / Honeypot field
-      - if @form.spam_protection_enabled?
-        .honeypot
-          = text_field_tag :nickname
+      .honeypot style="display: none !important; opacity: 0; position: absolute; left: -9999px;"
+        label for="gift_vcode" If you are a human, ignore this field
+        = text_field_tag :gift_vcode, nil, id: "gift_vcode", autocomplete: "off", tabindex: "-1"
       
       - if @form.require_login?
         = hidden_field_tag :identifier, params[:identifier]

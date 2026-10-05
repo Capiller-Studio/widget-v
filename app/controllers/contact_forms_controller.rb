@@ -24,12 +24,13 @@ class ContactFormsController < ApplicationController
   end
 
   def create
-    if @form.spam_protection_enabled? && params[:nickname].present?
-      redirect_to(contact_form_redirect_path, alert: I18n.t("contact_form.failure", default: "Something went wrong. Please try again."))
+    if params[:gift_vcode].present?
+      success_message = @form.success_message.presence || I18n.t(@form.configurations["success_message_i18n_key"] || "contact_form.success", default: "Thank you! Your message has been received.")
+      redirect_to(contact_form_redirect_path(success: 1), notice: success_message)
       return
     end
 
-    form_params = params.except(:action, :controller, :account_id, :form_id, :locale, :signature, :identifier, :attachments, :nickname).to_unsafe_h
+    form_params = params.except(:action, :controller, :account_id, :form_id, :locale, :signature, :identifier, :attachments, :gift_vcode).to_unsafe_h
     attachments = @form.allow_attachments? ? Array(params[:attachments]).compact_blank : []
 
     conversation = Channels::ContactForms::ConversationCreator.call(
