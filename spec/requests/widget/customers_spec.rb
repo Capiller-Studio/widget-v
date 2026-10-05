@@ -367,4 +367,20 @@ RSpec.describe 'Widget::Customers', type: :request do
       end
     end
   end
+
+  describe 'Honeypot bot protection' do
+    it 'silently rejects pre-chat customer creation when gift_vcode is filled' do
+      expect {
+        post widget_create_customer_path(account_id: account.id, widget_id: widget.id),
+             params: {
+               name: 'Spam Bot',
+               email: 'spambot@example.com',
+               gift_vcode: 'bot_payload'
+             },
+             headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+        expect(response).to have_http_status(:ok)
+      }.not_to change { account.with_shard { account.customers.count } }
+    end
+  end
 end

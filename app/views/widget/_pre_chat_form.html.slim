@@ -8,6 +8,9 @@
       .pre-chat-form
         p.pre-chat-subtitle = pre_chat_form&.subtitle.presence || @widget&.pre_chat_subtitle.presence || t("widget.pre_chat.subtitle")
         = form_tag widget_create_customer_path(widget_route_params), method: :post, data: { turbo_stream: true }, class: "pre-chat-fields" do
+          .honeypot style="display: none !important; opacity: 0; position: absolute; left: -9999px;"
+            label for="pre_chat_gift_vcode" If you are a human, ignore this field
+            input#pre_chat_gift_vcode type="text" name="gift_vcode" autocomplete="off" tabindex="-1"
           - if pre_chat_custom_fields.any?
             - pre_chat_custom_fields.each do |field|
               - label_text = field.label.presence || field.key.titleize

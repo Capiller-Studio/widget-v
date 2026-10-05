@@ -188,10 +188,10 @@ RSpec.describe 'ContactForms', type: :request do
       end
     end
 
-    it 'silently rejects spam when honeypot field :nickname is filled' do
+    it 'silently rejects spam when honeypot field :gift_vcode is filled' do
       expect {
         post contact_form_submit_path(account_id: account.id, form_id: form.id, locale: 'en'),
-             params: valid_params.merge(nickname: 'spambot_user')
+             params: valid_params.merge(gift_vcode: 'spambot_user')
 
         expect(response).to redirect_to(
           contact_form_entry_path(
@@ -199,10 +199,32 @@ RSpec.describe 'ContactForms', type: :request do
             form_id: form.id,
             locale: 'en',
             email: 'jane.doe@example.com',
-            name: 'Jane Doe'
+            name: 'Jane Doe',
+            success: 1
           )
         )
-        expect(flash[:alert]).to be_present
+        expect(flash[:notice]).to be_present
+      }.not_to change { account.with_shard { account.conversations.count } }
+    end
+
+    it 'silently rejects spam even when spam_protection_enabled is false' do
+      account.with_shard { form.update!(spam_protection_enabled: false) }
+
+      expect {
+        post contact_form_submit_path(account_id: account.id, form_id: form.id, locale: 'en'),
+             params: valid_params.merge(gift_vcode: 'spambot_user')
+
+        expect(response).to redirect_to(
+          contact_form_entry_path(
+            account_id: account.id,
+            form_id: form.id,
+            locale: 'en',
+            email: 'jane.doe@example.com',
+            name: 'Jane Doe',
+            success: 1
+          )
+        )
+        expect(flash[:notice]).to be_present
       }.not_to change { account.with_shard { account.conversations.count } }
     end
 
