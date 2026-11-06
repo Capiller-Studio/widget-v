@@ -68,7 +68,7 @@ export default class extends Controller {
           el.style.display = 'none'
         }
       } else {
-        el.innerHTML = `<a href="https://deskbolic.com" target="_blank" rel="noopener">Powered by Deskbolic</a>`
+        el.innerHTML = `<a href="https://capiller.com" target="_blank" rel="noopener">⚡ Powered by Capiller Rely</a>`
         el.style.display = ''
       }
     })

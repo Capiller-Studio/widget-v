@@ -21,7 +21,7 @@ RSpec.describe 'Widget Embedding & Frame Feature', type: :feature do
         expect(page.status_code).to eq(200)
         expect(page).to have_content('Hi there')
         expect(page).to have_content('Start a conversation')
-        expect(page).to have_content('Powered by Deskbolic')
+        expect(page).to have_content('Powered by Capiller Rely')
       end
     end
 

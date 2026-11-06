@@ -1,7 +1,7 @@
 doctype html
 html lang=I18n.locale dir=(I18n.locale.to_s.match?(/^(ar|he|fa|ur)/i) ? "rtl" : "ltr")
   head
-    title = content_for(:title) || "Deskbolic Widget"
+    title = content_for(:title) || "Capiller Rely Widget"
     meta name="viewport" content="width=device-width,initial-scale=1"
     meta name="apple-mobile-web-app-capable" content="yes"
     meta name="mobile-web-app-capable" content="yes"
@@ -136,7 +136,7 @@ html lang=I18n.locale dir=(I18n.locale.to_s.match?(/^(ar|he|fa|ur)/i) ? "rtl" : 
             var req = event.detail ? event.detail.request : null;
             if (!req) return;
             event.preventDefault();
-            console.warn("[Deskbolic] Turbo fetch failed (possible QUIC idle timeout). Retrying...", req.url);
+            console.warn("[Capiller Rely] Turbo fetch failed (possible QUIC idle timeout). Retrying...", req.url);
 
             if (req.method === "GET") {
               setTimeout(function() {
@@ -158,7 +158,7 @@ html lang=I18n.locale dir=(I18n.locale.to_s.match?(/^(ar|he|fa|ur)/i) ? "rtl" : 
                     Turbo.renderStreamMessage(html);
                   }
                 }).catch(function(err) {
-                  console.error("[Deskbolic] Retry failed, fallback to Turbo.visit:", err);
+                  console.error("[Capiller Rely] Retry failed, fallback to Turbo.visit:", err);
                   if (typeof Turbo !== "undefined" && Turbo.visit) {
                     Turbo.visit(req.url);
                   }
@@ -208,7 +208,7 @@ html lang=I18n.locale dir=(I18n.locale.to_s.match?(/^(ar|he|fa|ur)/i) ? "rtl" : 
                   window.location.reload();
                 }
               }).catch(function(err) {
-                console.error("[Deskbolic] Identify error:", err);
+                console.error("[Capiller Rely] Identify error:", err);
               });
             } else if (data.type === "deskbolic:reset") {
               try { window.localStorage.removeItem(storageKey); } catch (e) {}
@@ -239,8 +239,8 @@ html lang=I18n.locale dir=(I18n.locale.to_s.match?(/^(ar|he|fa|ur)/i) ? "rtl" : 
           span = custom_text
     - else
       .powered-by
-        a href="https://deskbolic.com" target="_blank" rel="noopener"
-          | Powered by Deskbolic
+        a href="https://capiller.com" target="_blank" rel="noopener"
+          | ⚡ Powered by Capiller Rely
 
     - if @form.present? || params[:controller] == "contact_forms"
       javascript:
