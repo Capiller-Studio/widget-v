@@ -1,6 +1,6 @@
 /* Entry point for your PostCSS build */
 :root {
-  --widget-primary-global: var(--widget-primary-color, #778DFF);
+  --widget-primary-global: var(--widget-primary-color, #3b82f6);
   --widget-loading-bg: rgba(255, 255, 255, 0.86);
   --widget-loading-border: rgba(15, 23, 42, 0.16);
   --widget-loading-shadow: 0 8px 28px rgba(15, 23, 42, 0.14);

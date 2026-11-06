@@ -2,8 +2,8 @@
 
 require 'spec_helper'
 ENV['RAILS_ENV'] ||= 'test'
-ENV['MARKETING_URL'] ||= 'https://deskbolic.com'
-ENV['DESKBOLIC_URL'] ||= 'https://deskbolic.app'
+ENV['MARKETING_URL'] ||= 'https://capiller.com'
+ENV['DESKBOLIC_URL'] ||= 'https://rely.capiller.com'
 ENV['HELPBOLIC_URL'] ||= 'https://helpbolic.com'
 require_relative '../config/environment'
 abort('The Rails environment is running in production mode!') if Rails.env.production?
