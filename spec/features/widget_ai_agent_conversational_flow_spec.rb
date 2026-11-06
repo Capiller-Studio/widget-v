@@ -11,7 +11,7 @@ RSpec.describe 'Widget AI Agent Conversational Flow', type: :feature do
         :ai_agent,
         account: account,
         portal: portal,
-        name: 'Deskbolic AI Assistant',
+        name: 'Capiller Rely AI Assistant',
         confidence_threshold: 0.7
       )
     end
