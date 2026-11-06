@@ -70,7 +70,7 @@ Rails.application.configure do
   # config.action_mailer.raise_delivery_errors = false
 
   # Set host to be used by links generated in mailer templates.
-  config.action_mailer.default_url_options = { host: ENV.fetch("WIDGET_APP_URL", "https://widget.deskbolic.com") }
+  config.action_mailer.default_url_options = { host: ENV.fetch("WIDGET_APP_URL", "https://widget-rely.capiller.com") }
 
   # Specify outgoing SMTP server. Remember to add smtp/* credentials via rails credentials:edit.
   # config.action_mailer.smtp_settings = {
@@ -99,15 +99,15 @@ Rails.application.configure do
   #
   # Skip DNS rebinding protection for the default health check endpoint.
   # config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
-  config.action_cable.url = ENV.fetch("ACTION_CABLE_URL", "wss://ws.deskbolic.com")
+  config.action_cable.url = ENV.fetch("ACTION_CABLE_URL", "wss://ws-rely.capiller.com")
   config.action_cable.allowed_request_origins = [ %r{http://*}, %r{https://*}, %r{file://*}, "file://", nil, "" ]
   config.action_mailer.delivery_method = :smtp
   config.action_mailer.smtp_settings = {
     user_name: Rails.application.credentials.smtp_username,
     password: Rails.application.credentials.smtp_password,
-    address: "mail.deskbolic.com",
+    address: "mail.capiller.com",
     port: 465,
-    domain: ENV.fetch("MAIN_DOMAIN", "deskbolic.com"),
+    domain: ENV.fetch("MAIN_DOMAIN", "capiller.com"),
     authentication: "plain",
     ssl: true
   }

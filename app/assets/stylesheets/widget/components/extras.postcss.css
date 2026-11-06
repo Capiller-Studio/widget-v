@@ -9,7 +9,7 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--widget-primary-color, #778DFF);
+    background: var(--widget-primary-color, #3b82f6);
     opacity: 0.4;
     animation: typingBounce 1.4s infinite ease-in-out both;
 

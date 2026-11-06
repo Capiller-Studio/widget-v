@@ -38,10 +38,10 @@ class EmbedController < ApplicationController
     if account
       account.with_shard do
         form = Channel::ContactForm.find_by(account_id: @account_id, id: @form_id)
-        @theme_color = form&.theme_color || form&.ui_configurations&.dig("theme_color") || form&.configurations&.dig("primary_color") || "#778DFF"
+        @theme_color = form&.theme_color || form&.ui_configurations&.dig("theme_color") || form&.configurations&.dig("primary_color") || "#3b82f6"
       end
     else
-      @theme_color = "#778DFF"
+      @theme_color = "#3b82f6"
     end
 
     response.headers["Content-Type"] = "application/javascript"

@@ -27,7 +27,7 @@ Rails.application.routes.draw do
       post "identify",      to: "widget#identify",        as: :identify
     end
 
-    # Form entry point: embed.deskbolic.com/:locale/f/:account_id/:form_id
+    # Form entry point: widget-rely.capiller.com/:locale/f/:account_id/:form_id
     get "f/:account_id/:form_id", to: "contact_forms#show", as: :contact_form_entry
     post "f/:account_id/:form_id", to: "contact_forms#create", as: :contact_form_submit
   end

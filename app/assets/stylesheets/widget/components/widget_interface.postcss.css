@@ -1,5 +1,5 @@
 #deskbolic-widget {
-  --widget-primary: var(--widget-primary-color, #778DFF);
+  --widget-primary: var(--widget-primary-color, #3b82f6);
   --widget-surface: #fff;
   --widget-surface-muted: #f8fafc;
   --widget-text: #1e293b;
